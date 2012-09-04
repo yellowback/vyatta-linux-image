@@ -1,0 +1,32 @@
+Marvell mv94xx driver for ARMADAXP
+
+========================================================================================
+
+1. Module-mode
+1) Modify driver's Makefile, change kernel source directory to current kernel source path.
+   Makefile:
+	ifeq ("arm", "$(ARCH)")
+		KERNEL_SRC=xxxx   eg:/root/armadaxp/linux-2.6.35.9
+	endif 
+2) Cross-compile driver
+	a) Add "xxx/cross/bin" path to $PATH
+	b) Build driver mv94xx.ko by running "make ARCH=arm CROSS_COMPILE=arm-mv7-linux-gnueabi-"
+3) Copy mv94xx.ko to armadapxp os and run "insmod mv94xx.ko" to load the driver.
+
+
+2. Build-in-kernel-mode
+
+1) Patch mv94xx driver to kernel
+	a) Add "xxx/cross/bin" path to $PATH, "export ARCH=arm", "export CROSS_COMPILE=arm-mv7-linux-gnueabi-"
+	b) Under mv94xx driver source code directory, run "make kbuild". 
+
+2) Re-build kernel image
+	a) cd to kernel directory. run make menuconfig, select "Device Drivers -->SCSI device support 
+	   --> SCSI low-level drivers-->Marvell Storage Controller 9180/9480"
+	b) make uImage
+
+3) Load and boot from the kernel image, mv94xx driver will be loaded automatically. 
+
+4) Notes:
+	a) If boot with mv94xx driver built-in and devices attached, the OS drive's partition won't be /dev/sda1, then we need change "boot_args_root" value under uboot command line.
+	b) It also supports to boot from the OS drive attached on Marvell mv94xx controller.

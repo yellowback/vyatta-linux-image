@@ -14,7 +14,11 @@ unsigned long initrd_start, initrd_end;
 int initrd_below_start_ok;
 unsigned int real_root_dev;	/* do_proc_dointvec cannot handle kdev_t */
 static int __initdata old_fd, root_fd;
+#if defined(CONFIG_MACH_OPENBLOCKS)
+int __initdata mount_initrd = 1;
+#else
 static int __initdata mount_initrd = 1;
+#endif
 
 static int __init no_initrd(char *str)
 {
@@ -124,3 +128,22 @@ int __init initrd_load(void)
 	sys_unlink("/initrd.image");
 	return 0;
 }
+
+#if defined(CONFIG_MACH_OPENBLOCKS)
+int __init do_restore(void *shell)
+{
+	static char *argv[] = { "flashcfg", "-x", NULL, };
+
+	extern const char *envp_init[];
+
+	sys_close(old_fd);sys_close(root_fd);
+	sys_close(0);sys_close(1);sys_close(2);
+	sys_setsid();
+	(void) sys_open("/dev/console",O_RDWR,0);
+	(void) sys_dup(0);
+	(void) sys_dup(0);
+	kernel_execve(shell, argv, envp_init);
+	printk("[do_restore] Error starting restore thread!\n");
+	return (-1);
+}
+#endif /* CONFIG_OPENBLOCKS */

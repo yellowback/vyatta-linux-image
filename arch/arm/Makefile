@@ -10,9 +10,11 @@
 #
 # Copyright (C) 1995-2001 by Russell King
 
+
 LDFLAGS_vmlinux	:=-p --no-undefined -X
 ifeq ($(CONFIG_CPU_ENDIAN_BE8),y)
 LDFLAGS_vmlinux	+= --be8
+LDFLAGS_MODULE += --be8
 endif
 
 OBJCOPYFLAGS	:=-O binary -R .comment -S
@@ -196,9 +198,11 @@ machine-$(CONFIG_MACH_SPEAR300)		:= spear3xx
 machine-$(CONFIG_MACH_SPEAR310)		:= spear3xx
 machine-$(CONFIG_MACH_SPEAR320)		:= spear3xx
 machine-$(CONFIG_MACH_SPEAR600)		:= spear6xx
+machine-$(CONFIG_ARCH_ARMADA_XP)	:= armadaxp
 
 # Platform directory name.  This list is sorted alphanumerically
 # by CONFIG_* macro name.
+plat-$(CONFIG_PLAT_ARMADA)	:= armada
 plat-$(CONFIG_ARCH_MXC)		:= mxc
 plat-$(CONFIG_ARCH_OMAP)	:= omap
 plat-$(CONFIG_ARCH_S3C64XX)	:= samsung
@@ -288,7 +292,6 @@ archclean:
 # My testing targets (bypasses dependencies)
 bp:;	$(Q)$(MAKE) $(build)=$(boot) MACHINE=$(MACHINE) $(boot)/bootpImage
 i zi:;	$(Q)$(MAKE) $(build)=$(boot) MACHINE=$(MACHINE) $@
-
 
 define archhelp
   echo  '* zImage        - Compressed kernel image (arch/$(ARCH)/boot/zImage)'

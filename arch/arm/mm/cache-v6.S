@@ -63,14 +63,32 @@ ENDPROC(v6_flush_icache_all)
 ENTRY(v6_flush_kern_cache_all)
 	mov	r0, #0
 #ifdef HARVARD_CACHE
+#ifdef CONFIG_SHEEVA_ERRATA_ARM_CPU_4611
+        mrs     r2, cpsr
+        orr     r3, r2, #PSR_F_BIT | PSR_I_BIT
+        msr     cpsr_c, r3                      @ Disable interrupts
+        mcr     p15, 0, r0, c7, c10, 5          @ DMB
+#endif
 	mcr	p15, 0, r0, c7, c14, 0		@ D cache clean+invalidate
+#ifdef CONFIG_SHEEVA_ERRATA_ARM_CPU_4611
+	msr     cpsr_c, r2                      @ Restore interrupts
+#endif
 #ifndef CONFIG_ARM_ERRATA_411920
 	mcr	p15, 0, r0, c7, c5, 0		@ I+BTB cache invalidate
 #else
 	b	v6_flush_icache_all
 #endif
 #else
+#ifdef CONFIG_SHEEVA_ERRATA_ARM_CPU_4611
+        mrs     r2, cpsr
+        orr     r3, r2, #PSR_F_BIT | PSR_I_BIT
+        msr     cpsr_c, r3                      @ Disable interrupts
+        mcr     p15, 0, r0, c7, c10, 5          @ DMB
+#endif
 	mcr	p15, 0, r0, c7, c15, 0		@ Cache clean+invalidate
+#ifdef CONFIG_SHEEVA_ERRATA_ARM_CPU_4611
+	msr     cpsr_c, r2                      @ Restore interrupts
+#endif
 #endif
 	mov	pc, lr
 
@@ -132,12 +150,21 @@ ENTRY(v6_coherent_user_range)
  UNWIND(.fnstart		)
 #ifdef HARVARD_CACHE
 	bic	r0, r0, #CACHE_LINE_SIZE - 1
+#endif
+#if defined (CONFIG_SHEEVA_ERRATA_ARM_CPU_4611) || !defined(CONFIG_HAVE_GENERIC_DMA_COHERENT)
+        mrs     r2, cpsr
+        orr     r3, r2, #PSR_F_BIT | PSR_I_BIT
+        msr     cpsr_c, r3                      @ Disable interrupts
+        mcr     p15, 0, r0, c7, c10, 5          @ DMB
+#endif
 1:
  USER(	mcr	p15, 0, r0, c7, c10, 1	)	@ clean D line
 	add	r0, r0, #CACHE_LINE_SIZE
 2:
 	cmp	r0, r1
 	blo	1b
+#if defined (CONFIG_SHEEVA_ERRATA_ARM_CPU_4611) || !defined(CONFIG_HAVE_GENERIC_DMA_COHERENT)
+        msr     cpsr_c, r2                      @ Restore interrupts
 #endif
 	mov	r0, #0
 #ifdef HARVARD_CACHE
@@ -157,9 +184,15 @@ ENTRY(v6_coherent_user_range)
  * isn't mapped, just try the next page.
  */
 9001:
+#ifdef CONFIG_MV_SUPPORT_64KB_PAGE_SIZE
+	mov	r0, r0, lsr #16
+	mov	r0, r0, lsl #16
+	add	r0, r0, #0x10000
+#else
 	mov	r0, r0, lsr #12
 	mov	r0, r0, lsl #12
 	add	r0, r0, #4096
+#endif
 	b	2b
  UNWIND(.fnend		)
 ENDPROC(v6_coherent_user_range)
@@ -176,8 +209,18 @@ ENDPROC(v6_coherent_kern_range)
  */
 ENTRY(v6_flush_kern_dcache_area)
 	add	r1, r0, r1
+#if defined (CONFIG_SHEEVA_ERRATA_ARM_CPU_4611) || !defined(CONFIG_HAVE_GENERIC_DMA_COHERENT)
+        mrs     r2, cpsr
+        orr     r3, r2, #PSR_F_BIT | PSR_I_BIT
+        msr     cpsr_c, r3                      @ Disable interrupts
+        mcr     p15, 0, r0, c7, c10, 5          @ DMB
+#endif
 	bic	r0, r0, #D_CACHE_LINE_SIZE - 1
 1:
+#ifdef CONFIG_SMP_ENABLE_LAZY_FLUSH
+	/* no cache maintenance broadcasting */
+	ldr	r3, [r0]			@ read for ownership
+#endif
 #ifdef HARVARD_CACHE
 	mcr	p15, 0, r0, c7, c14, 1		@ clean & invalidate D line
 #else
@@ -186,6 +229,9 @@ ENTRY(v6_flush_kern_dcache_area)
 	add	r0, r0, #D_CACHE_LINE_SIZE
 	cmp	r0, r1
 	blo	1b
+#if defined (CONFIG_SHEEVA_ERRATA_ARM_CPU_4611) || !defined(CONFIG_HAVE_GENERIC_DMA_COHERENT)
+	msr     cpsr_c, r2                      @ Restore interrupts
+#endif
 #ifdef HARVARD_CACHE
 	mov	r0, #0
 	mcr	p15, 0, r0, c7, c10, 4
@@ -210,6 +256,15 @@ v6_dma_inv_range:
 #endif
 	tst	r0, #D_CACHE_LINE_SIZE - 1
 	bic	r0, r0, #D_CACHE_LINE_SIZE - 1
+#if defined (CONFIG_SHEEVA_ERRATA_ARM_CPU_4611) || !defined(CONFIG_HAVE_GENERIC_DMA_COHERENT) 
+	save_and_disable_irqs r3
+        mcr     p15, 0, r0, c7, c10, 5          @ DMB
+#endif
+#if defined (CONFIG_SHEEVA_ERRATA_ARM_CPU_4413) || !defined(CONFIG_HAVE_GENERIC_DMA_COHERENT) 
+	@ This WA is to cover the case tha ERRATA-4611 is not compiled in
+	@ if it is compiled in then the second successive DMB should be very fast
+	mcr 	p15, 0, r0, c7, c10, 5		@ DMB
+#endif
 #ifdef HARVARD_CACHE
 	mcrne	p15, 0, r0, c7, c10, 1		@ clean D line
 #else
@@ -219,6 +274,9 @@ v6_dma_inv_range:
 #ifdef CONFIG_DMA_CACHE_RWFO
 	ldrneb	r2, [r1, #-1]			@ read for ownership
 	strneb	r2, [r1, #-1]			@ write for ownership
+#if defined (CONFIG_SHEEVA_ERRATA_ARM_CPU_4413) || !defined(CONFIG_HAVE_GENERIC_DMA_COHERENT) 
+	mcrne 	p15, 0, r0, c7, c10, 5		@ Data Memory Barrier
+#endif
 #endif
 	bic	r1, r1, #D_CACHE_LINE_SIZE - 1
 #ifdef HARVARD_CACHE
@@ -237,8 +295,14 @@ v6_dma_inv_range:
 #ifdef CONFIG_DMA_CACHE_RWFO
 	ldrlo	r2, [r0]			@ read for ownership
 	strlo	r2, [r0]			@ write for ownership
+#if defined (CONFIG_SHEEVA_ERRATA_ARM_CPU_4413) || !defined(CONFIG_HAVE_GENERIC_DMA_COHERENT) 
+	mcrlo 	p15, 0, r0, c7, c10, 5		@ Data Memory Barrier
+#endif
 #endif
 	blo	1b
+#if defined (CONFIG_SHEEVA_ERRATA_ARM_CPU_4611) || !defined(CONFIG_HAVE_GENERIC_DMA_COHERENT) 
+	restore_irqs r3
+#endif
 	mov	r0, #0
 	mcr	p15, 0, r0, c7, c10, 4		@ drain write buffer
 	mov	pc, lr
@@ -250,9 +314,15 @@ v6_dma_inv_range:
  */
 v6_dma_clean_range:
 	bic	r0, r0, #D_CACHE_LINE_SIZE - 1
+#if defined (CONFIG_SHEEVA_ERRATA_ARM_CPU_4611) || !defined(CONFIG_HAVE_GENERIC_DMA_COHERENT) 
+	save_and_disable_irqs r3                @ Disable interrupts
+#endif
 1:
 #ifdef CONFIG_DMA_CACHE_RWFO
 	ldr	r2, [r0]			@ read for ownership
+#endif
+#if defined (CONFIG_SHEEVA_ERRATA_ARM_CPU_4611) || !defined(CONFIG_HAVE_GENERIC_DMA_COHERENT) 
+        mcr     p15, 0, r0, c7, c10, 5          @ DMB
 #endif
 #ifdef HARVARD_CACHE
 	mcr	p15, 0, r0, c7, c10, 1		@ clean D line
@@ -262,6 +332,9 @@ v6_dma_clean_range:
 	add	r0, r0, #D_CACHE_LINE_SIZE
 	cmp	r0, r1
 	blo	1b
+#if defined (CONFIG_SHEEVA_ERRATA_ARM_CPU_4611) || !defined(CONFIG_HAVE_GENERIC_DMA_COHERENT) 
+	restore_irqs r3               @ Restore interrupts
+#endif
 	mov	r0, #0
 	mcr	p15, 0, r0, c7, c10, 4		@ drain write buffer
 	mov	pc, lr
@@ -272,9 +345,15 @@ v6_dma_clean_range:
  *	- end     - virtual end address of region
  */
 ENTRY(v6_dma_flush_range)
+#if defined (CONFIG_SHEEVA_ERRATA_ARM_CPU_4611) || !defined(CONFIG_HAVE_GENERIC_DMA_COHERENT) 
+	save_and_disable_irqs r3                @ Disable interrupts
+#endif
 #ifdef CONFIG_DMA_CACHE_RWFO
 	ldrb	r2, [r0]		@ read for ownership
 	strb	r2, [r0]		@ write for ownership
+#endif
+#if defined (CONFIG_SHEEVA_ERRATA_ARM_CPU_4611) || !defined(CONFIG_HAVE_GENERIC_DMA_COHERENT) 
+        mcr     p15, 0, r0, c7, c10, 5          @ DMB
 #endif
 	bic	r0, r0, #D_CACHE_LINE_SIZE - 1
 1:
@@ -288,8 +367,14 @@ ENTRY(v6_dma_flush_range)
 #ifdef CONFIG_DMA_CACHE_RWFO
 	ldrlob	r2, [r0]			@ read for ownership
 	strlob	r2, [r0]			@ write for ownership
+#if defined (CONFIG_SHEEVA_ERRATA_ARM_CPU_4611) || !defined(CONFIG_HAVE_GENERIC_DMA_COHERENT) 
+        mcrlo     p15, 0, r0, c7, c10, 5          @ DMB
+#endif
 #endif
 	blo	1b
+#if defined (CONFIG_SHEEVA_ERRATA_ARM_CPU_4611) || !defined(CONFIG_HAVE_GENERIC_DMA_COHERENT) 
+	restore_irqs r3                      @ Restore interrupts
+#endif
 	mov	r0, #0
 	mcr	p15, 0, r0, c7, c10, 4		@ drain write buffer
 	mov	pc, lr

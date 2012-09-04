@@ -36,6 +36,11 @@
 #include <asm/kdebug.h>
 #include <asm/system.h>
 #include <asm/traps.h>
+#include <asm/io.h>
+
+#ifdef  CONFIG_ARCH_ARMADA_XP
+DEFINE_SPINLOCK(dap_lock);
+#endif
 
 /* Breakpoint currently in use for each BRP. */
 static DEFINE_PER_CPU(struct perf_event *, bp_on_reg[ARM_MAX_BRP]);
@@ -841,6 +846,10 @@ static void reset_ctrl_regs(void *info)
 	int i, cpu = smp_processor_id();
 	u32 dbg_power;
 	cpumask_t *cpumask = info;
+#ifdef 	CONFIG_ARCH_ARMADA_XP
+	static int workaround_loop=0;
+	unsigned long flags;
+#endif
 
 	/*
 	 * v7 debug contains save and restore registers so that debug state
@@ -855,13 +864,46 @@ static void reset_ctrl_regs(void *info)
 		 * Ensure sticky power-down is clear (i.e. debug logic is
 		 * powered up).
 		 */
-		asm volatile("mrc p14, 0, %0, c1, c5, 4" : "=r" (dbg_power));
-		if ((dbg_power & 0x1) == 0) {
-			pr_warning("CPU %d debug is powered down!\n", cpu);
-			cpumask_or(cpumask, cpumask, cpumask_of(cpu));
-			return;
-		}
+#ifdef 	CONFIG_ARCH_ARMADA_XP
+			/*is is a workaround to reset the DEBUG portion of 
+			 *the core, else CP14 won't be accessable 
+			 */
+			spin_lock_irqsave(&dap_lock,flags);
+			 if(workaround_loop ==0){
+			/* enable Debug unit  for cpu 0*/
+			writel(0xc2301000,INTER_REGS_BASE | 0x20d00);
+			writel(0xc5acce55,INTER_REGS_BASE | 0x23fb0);
+			readl(INTER_REGS_BASE | 0x23314);
 
+			/* enable Debug unit  for cpu 1*/
+			writel(0xc2307000,INTER_REGS_BASE | 0x20d00);
+			writel(0xc5acce55,INTER_REGS_BASE | 0x23fb0);
+			readl(INTER_REGS_BASE | 0x23314);
+
+			/* enable Debug unit  for cpu 2*/
+			writel(0xc230c000,INTER_REGS_BASE | 0x20d00);
+			writel(0xc5acce55,INTER_REGS_BASE | 0x23fb0);
+			readl(INTER_REGS_BASE | 0x23314);
+
+			/* enable Debug unit  for cpu 3*/
+			writel(0xc2312000,INTER_REGS_BASE | 0x20d00);
+			writel(0xc5acce55,INTER_REGS_BASE | 0x23fb0);
+			readl(INTER_REGS_BASE | 0x23314);
+			workaround_loop++;
+			}
+			spin_unlock_irqrestore(&dap_lock,flags);
+#else
+		/*
+                 * Ensure sticky power-down is clear (i.e. debug logic is
+                 * powered up).
+                 */
+                asm volatile("mrc p14, 0, %0, c1, c5, 4" : "=r" (dbg_power));
+                if ((dbg_power & 0x1) == 0) {
+                        pr_warning("CPU %d debug is powered down!\n", cpu);
+                        cpumask_or(cpumask, cpumask, cpumask_of(cpu));
+                        return;
+                }
+#endif
 		/*
 		 * Unconditionally clear the lock by writing a value
 		 * other than 0xC5ACCE55 to the access register.
@@ -933,6 +975,7 @@ static int __init arch_hw_breakpoint_init(void)
 	 * debugger will leave the world in a nice state for us.
 	 */
 	on_each_cpu(reset_ctrl_regs, &cpumask, 1);
+	on_each_cpu(reset_ctrl_regs, &cpumask, 1);
 	if (!cpumask_empty(&cpumask)) {
 		core_num_brps = 0;
 		core_num_reserved_brps = 0;
@@ -962,7 +1005,7 @@ static int __init arch_hw_breakpoint_init(void)
 	register_cpu_notifier(&dbg_reset_nb);
 	return 0;
 }
-arch_initcall(arch_hw_breakpoint_init);
+//arch_initcall(arch_hw_breakpoint_init);
 
 void hw_breakpoint_pmu_read(struct perf_event *bp)
 {

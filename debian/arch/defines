@@ -3,7 +3,7 @@ abiname: 1
 
 [base]
 arches:
- i386 amd64
+ i386 amd64 armel
 compiler: gcc-4.4
 
 [image]

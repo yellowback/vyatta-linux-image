@@ -30,6 +30,10 @@
 #include <linux/dmaengine.h>
 #include <linux/hrtimer.h>
 
+#if defined(CONFIG_NET_SKB_HEADROOM)
+# define NET_SKB_PAD  CONFIG_NET_SKB_HEADROOM
+#endif
+
 /* Don't change this without changing skb_csum_unnecessary! */
 #define CHECKSUM_NONE 0
 #define CHECKSUM_UNNECESSARY 1
@@ -371,6 +375,10 @@ struct sk_buff {
 	__be16			protocol;
 
 	void			(*destructor)(struct sk_buff *skb);
+#ifdef CONFIG_NET_SKB_RECYCLE
+	int				(*skb_recycle) (struct sk_buff *skb);
+	void			*hw_cookie;
+#endif /* CONFIG_NET_SKB_RECYCLE */
 #if defined(CONFIG_NF_CONNTRACK) || defined(CONFIG_NF_CONNTRACK_MODULE)
 	struct nf_conntrack	*nfct;
 #endif
@@ -1855,6 +1863,9 @@ extern struct sk_buff *skb_recv_datagram(struct sock *sk, unsigned flags,
 extern unsigned int    datagram_poll(struct file *file, struct socket *sock,
 				     struct poll_table_struct *wait);
 extern int	       skb_copy_datagram_iovec(const struct sk_buff *from,
+					       int offset, struct iovec *to,
+					       int size);
+extern int	       skb_copy_datagram_to_kernel_iovec(const struct sk_buff *from,
 					       int offset, struct iovec *to,
 					       int size);
 extern int	       skb_copy_and_csum_datagram_iovec(struct sk_buff *skb,

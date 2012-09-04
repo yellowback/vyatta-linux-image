@@ -177,7 +177,31 @@ static ssize_t mtd_flags_show(struct device *dev,
 	return snprintf(buf, PAGE_SIZE, "0x%lx\n", (unsigned long)mtd->flags);
 
 }
+#if defined(CONFIG_MACH_OPENBLOCKS)
+static ssize_t mtd_flags_set(struct device *dev, struct device_attribute *attr,
+													const char *buf, size_t count)
+{
+	unsigned int tmp;
+	struct mtd_info *mtd = dev_to_mtd(dev);
+
+	if(sscanf(buf, "%x", &tmp) != 1){
+		printk(KERN_WARNING "%s Invalid input string!", buf);
+		return count;
+	}
+
+	if(tmp == 0x800 || tmp == 0xc00)
+		mtd->flags = tmp;
+#if 1
+	else
+		printk(KERN_WARNING "%x Invalid input value!", tmp);
+#endif
+
+	return count;
+}
+static DEVICE_ATTR(flags, S_IRWXUGO, mtd_flags_show, mtd_flags_set);
+#else
 static DEVICE_ATTR(flags, S_IRUGO, mtd_flags_show, NULL);
+#endif
 
 static ssize_t mtd_size_show(struct device *dev,
 		struct device_attribute *attr, char *buf)

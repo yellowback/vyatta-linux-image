@@ -65,6 +65,23 @@
  *	the ldr1w or str1w instructions (some of these macros may expand to
  *	than one 32bit instruction in Thumb-2)
  */
+        .macro  preload, reg, lines
+	        mov     r3, \reg
+	        mov     r4, #\lines
+222:
+	        pld     [r3, #28]
+	        subs    r4, r4, #1
+	        add     r3, r3, #32
+	        bne 222b
+	        .endm
+
+        .macro  loadstore, lines
+	        mov     r9, #\lines
+444:		ldr8w	r1, r3, r4, r5, r6, r7, r8, ip, lr, abort=20f
+		subs	r9, r9, #1
+		str8w	r0, r3, r4, r5, r6, r7, r8, ip, lr, abort=20f
+		bgt	444b
+	        .endm
 
 
 		enter	r4, lr
@@ -78,7 +95,7 @@
 		bne	10f
 
 1:		subs	r2, r2, #(28)
-		stmfd	sp!, {r5 - r8}
+		stmfd	sp!, {r5 - r9}
 		blt	5f
 
 	CALGN(	ands	ip, r0, #31		)
@@ -88,7 +105,73 @@
 	CALGN(	adr	r4, 6f			)
 	CALGN(	subs	r2, r2, r3		)  @ C gets set
 	CALGN(	add	pc, r4, ip		)
+#ifdef CONFIG_AURORA_IO_CACHE_COHERENCY 
+/* DSMP - Z1 optimized for Write Allocate + L2 Write Through */
+copy8:
+		movs	r9, r2, lsr #8
+		beq	copy4
+		preload	r1, 8
+		preload r0, 8
+		loadstore 8 
+		sub	r2, #32*8
+		b	copy8
+copy4:	
+		movs	r9, r2, lsr #7
+		beq	copy2
+		preload	r1, 4
+		preload r0, 4
+		loadstore 4
+		sub	r2, #32*4
+		b	copy4
+#else
+copy128:
+                movs    r9, r2, lsr #12
+                beq     copy64
+                preload r1, 128
+                loadstore 128
+                sub     r2, #32*128
+                b       copy128
+copy64:
+                movs    r9, r2, lsr #11
+                beq     copy32
+                preload r1, 64
+                loadstore 64
+                sub     r2, #32*64
+                b       copy64
 
+copy32:
+		movs	r9, r2, lsr #10
+		beq	copy16
+		preload	r1, 32
+		loadstore 32
+		sub	r2, #32*32
+		b 	copy32
+copy16:	
+		movs	r9, r2, lsr #9
+		beq	copy8
+		preload	r1, 16
+		loadstore 16
+		sub	r2, #32*16
+		b	copy16
+
+copy8:
+		movs	r9, r2, lsr #8
+		beq	copy4
+		preload	r1, 8
+		loadstore 8 
+		sub	r2, #32*8
+		b	copy8
+copy4:	
+		movs	r9, r2, lsr #7
+		beq	copy2
+		preload	r1, 4
+		loadstore 4
+		sub	r2, #32*4
+		b	copy4
+#endif
+copy2:
+	
+	
 	PLD(	pld	[r1, #0]		)
 2:	PLD(	subs	r2, r2, #96		)
 	PLD(	pld	[r1, #28]		)
@@ -143,7 +226,7 @@
 
 	CALGN(	bcs	2b			)
 
-7:		ldmfd	sp!, {r5 - r8}
+7:		ldmfd	sp!, {r5 - r9}
 
 8:		movs	r2, r2, lsl #31
 		ldr1b	r1, r3, ne, abort=21f
@@ -257,7 +340,7 @@
 	.macro	copy_abort_preamble
 19:	ldmfd	sp!, {r5 - r9}
 	b	21f
-20:	ldmfd	sp!, {r5 - r8}
+20:	ldmfd	sp!, {r5 - r9}
 21:
 	.endm
 

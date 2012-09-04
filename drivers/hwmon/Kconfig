@@ -210,6 +210,13 @@ config SENSORS_ADT7475
 
 	  This driver can also be build as a module.  If so, the module
 	  will be called adt7475.
+config SENSORS_ARMADA_XP
+	tristate "Armada XP SoC Thermal Sensor"
+	depends on ARCH_ARMADA_XP
+	default y
+	help
+	  This driver provides support for the Marvell's Armada XP SoC thermal
+	  Controller, which provides onchip temperature sensors.
 
 config SENSORS_ASC7621
 	tristate "Andigilog aSC7621"

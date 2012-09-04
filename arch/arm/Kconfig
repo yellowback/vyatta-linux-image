@@ -511,6 +511,21 @@ config ARCH_LPC32XX
 	select GENERIC_CLOCKEVENTS
 	help
 	  Support for the NXP LPC32XX family of processors
+	  
+config ARCH_ARMADA_XP
+	bool "Marvell Armada XP"
+	select PCI
+	select ARCH_SUPPORTS_MSI
+	select ARCH_REQUIRE_GPIOLIB
+	select GENERIC_GPIO
+	select GENERIC_TIME
+	select GENERIC_CLOCKEVENTS
+	select PLAT_ARMADA
+#	select PLAT_ORION
+	select HAVE_REGS_AND_STACK_ACCESS_API
+	select COMMON_CLKDEV
+	select CLKSRC_MMIO
+	select CLKDEV_LOOKUP
 
 config ARCH_MV78XX0
 	bool "Marvell MV78xx0"
@@ -960,6 +975,9 @@ source "arch/arm/mach-realview/Kconfig"
 
 source "arch/arm/mach-sa1100/Kconfig"
 
+source "arch/arm/mach-armadaxp/Kconfig"
+source "arch/arm/plat-armada/Kconfig"
+
 source "arch/arm/plat-samsung/Kconfig"
 source "arch/arm/plat-s3c24xx/Kconfig"
 source "arch/arm/plat-s5p/Kconfig"
@@ -1007,6 +1025,12 @@ source "arch/arm/mach-vt8500/Kconfig"
 source "arch/arm/mach-w90x900/Kconfig"
 
 # Definitions to make life easier
+config PLAT_ARMADA
+	bool
+	select CLKSRC_MMIO
+        select GENERIC_IRQ_CHIP
+        select HAVE_SCHED_CLOCK
+
 config ARCH_ACORN
 	bool
 
@@ -1337,7 +1361,7 @@ config SMP
 	depends on REALVIEW_EB_ARM11MP || REALVIEW_EB_A9MP || \
 		 MACH_REALVIEW_PB11MP || MACH_REALVIEW_PBX || ARCH_OMAP4 || \
 		 ARCH_EXYNOS4 || ARCH_TEGRA || ARCH_U8500 || ARCH_VEXPRESS_CA9X4 || \
-		 ARCH_MSM_SCORPIONMP || ARCH_SHMOBILE
+		 ARCH_MSM_SCORPIONMP || ARCH_SHMOBILE || ARCH_ARMADA_XP
 	select USE_GENERIC_SMP_HELPERS
 	select HAVE_ARM_SCU if !ARCH_MSM_SCORPIONMP
 	help
@@ -1423,7 +1447,7 @@ config LOCAL_TIMERS
 	bool "Use local timer interrupts"
 	depends on SMP
 	default y
-	select HAVE_ARM_TWD if (!ARCH_MSM_SCORPIONMP && !EXYNOS4_MCT)
+	select HAVE_ARM_TWD if (!ARCH_MSM_SCORPIONMP && !EXYNOS4_MCT && !ARCH_ARMADA_XP)
 	help
 	  Enable support for local timers on SMP platforms, rather then the
 	  legacy IPI broadcast method.  Local timers allows the system

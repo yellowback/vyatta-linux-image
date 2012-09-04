@@ -290,6 +290,7 @@ ENTRY(secondary_startup)
 	 * the processor type - there is no need to check the machine type
 	 * as it has already been validated by the primary processor.
 	 */
+
 	setmode	PSR_F_BIT | PSR_I_BIT | SVC_MODE, r9
 	mrc	p15, 0, r9, c0, c0		@ get processor id
 	bl	__lookup_processor_type
@@ -297,6 +298,10 @@ ENTRY(secondary_startup)
 	moveq	r0, #'p'			@ yes, error 'p'
  THUMB( it	eq )		@ force fixup-able long branch encoding
 	beq	__error_p
+
+
+
+
 
 	/*
 	 * Use the page tables supplied from  __cpu_up.

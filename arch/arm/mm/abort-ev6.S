@@ -28,6 +28,7 @@ ENTRY(v6_early_abort)
 #endif
 	mrc	p15, 0, r1, c5, c0, 0		@ get FSR
 	mrc	p15, 0, r0, c6, c0, 0		@ get FAR
+#ifndef CONFIG_SMP
 /*
  * Faulty SWP instruction on 1136 doesn't set bit 11 in DFSR (erratum 326103).
  * The test below covers all the write situations, including Java bytecodes
@@ -43,6 +44,7 @@ ENTRY(v6_early_abort)
 	do_ldrd_abort
 	tst	r3, #1 << 20			@ L = 0 -> write
 	orreq	r1, r1, #1 << 11		@ yes.
+#endif
 	mov	pc, lr
 
 

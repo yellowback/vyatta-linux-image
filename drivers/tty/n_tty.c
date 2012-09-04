@@ -49,6 +49,7 @@
 #include <linux/file.h>
 #include <linux/uaccess.h>
 #include <linux/module.h>
+#include <linux/delay.h>
 
 #include <asm/system.h>
 
@@ -61,7 +62,7 @@
  * controlling the space in the read buffer.
  */
 #define TTY_THRESHOLD_THROTTLE		128 /* now based on remaining room */
-#define TTY_THRESHOLD_UNTHROTTLE 	128
+#define TTY_THRESHOLD_UNTHROTTLE	128
 
 /*
  * Special byte codes used in the echo buffer to represent operations
@@ -185,7 +186,6 @@ static void reset_buffer_flags(struct tty_struct *tty)
 	tty->canon_head = tty->canon_data = tty->erasing = 0;
 	memset(&tty->read_flags, 0, sizeof tty->read_flags);
 	n_tty_set_room(tty);
-	check_unthrottle(tty);
 }
 
 /**
@@ -406,7 +406,7 @@ static ssize_t process_output_block(struct tty_struct *tty,
 				    const unsigned char *buf, unsigned int nr)
 {
 	int	space;
-	int 	i;
+	int	i;
 	const unsigned char *cp;
 
 	mutex_lock(&tty->output_lock);
@@ -1576,6 +1576,7 @@ static int n_tty_open(struct tty_struct *tty)
 
 	/* These are ugly. Currently a malloc failure here can panic */
 	if (!tty->read_buf) {
+		msleep(100);
 		tty->read_buf = kzalloc(N_TTY_BUF_SIZE, GFP_KERNEL);
 		if (!tty->read_buf)
 			return -ENOMEM;
@@ -1587,6 +1588,7 @@ static int n_tty_open(struct tty_struct *tty)
 			return -ENOMEM;
 	}
 	reset_buffer_flags(tty);
+	tty_unthrottle(tty);
 	tty->column = 0;
 	n_tty_set_termios(tty, NULL);
 	tty->minimum_to_wake = 1;
@@ -1607,7 +1609,7 @@ static inline int input_available_p(struct tty_struct *tty, int amt)
 }
 
 /**
- * 	copy_from_read_buf	-	copy read data directly
+ *	copy_from_read_buf	-	copy read data directly
  *	@tty: terminal device
  *	@b: user data
  *	@nr: size of data
@@ -1815,6 +1817,7 @@ do_it_again:
 			/* FIXME: does n_tty_set_room need locking ? */
 			n_tty_set_room(tty);
 			timeout = schedule_timeout(timeout);
+			msleep(20);
 			BUG_ON(!tty->read_buf);
 			continue;
 		}
@@ -1909,7 +1912,7 @@ do_it_again:
 		if (nr)
 			clear_bit(TTY_PUSH, &tty->flags);
 	} else if (test_and_clear_bit(TTY_PUSH, &tty->flags))
-		 goto do_it_again;
+		goto do_it_again;
 
 	n_tty_set_room(tty);
 	return retval;

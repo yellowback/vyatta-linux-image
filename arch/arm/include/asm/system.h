@@ -100,6 +100,7 @@ void hook_ifault_code(int nr, int (*fn)(unsigned long, unsigned int,
 extern asmlinkage void __backtrace(void);
 extern asmlinkage void c_backtrace(unsigned long fp, int pmode);
 
+
 struct mm_struct;
 extern void show_pte(struct mm_struct *mm, unsigned long addr);
 extern void __show_regs(struct pt_regs *);
@@ -134,7 +135,11 @@ extern unsigned int user_debug;
 #if __LINUX_ARM_ARCH__ >= 7
 #define isb() __asm__ __volatile__ ("isb" : : : "memory")
 #define dsb() __asm__ __volatile__ ("dsb" : : : "memory")
+#ifdef CONFIG_SHEEVA_ERRATA_ARM_CPU_6075
+#define dmb() __asm__ __volatile__ ("dsb" : : : "memory")
+#else
 #define dmb() __asm__ __volatile__ ("dmb" : : : "memory")
+#endif
 #elif defined(CONFIG_CPU_XSC3) || __LINUX_ARM_ARCH__ == 6
 #define isb() __asm__ __volatile__ ("mcr p15, 0, %0, c7, c5, 4" \
 				    : : "r" (0) : "memory")
@@ -261,6 +266,24 @@ do {									\
  */
 #define swp_is_buggy
 #endif
+
+static inline int atomic_backoff_delay(void)
+{
+#ifdef CONFIG_SHEEVA_ERRATA_ARM_CPU_ADD_DELAY_FOR_STREX
+        unsigned int delay;
+
+        __asm__ __volatile__(
+        "       mrc     p15, 0, %0, c0, c0, 5\n"
+        "       and     %0, %0, #0xf\n"
+        "       mov     %0, %0, lsl #8\n"
+        "1:     subs    %0, %0, #1\n"
+        "       bpl     1b\n"
+        : "=&r" (delay)
+        :
+        : "cc");
+#endif
+        return 1;
+}
 
 static inline unsigned long __xchg(unsigned long x, volatile void *ptr, int size)
 {

@@ -1,6 +1,8 @@
 #
 # Makefile for the Linux network (ethercard) device drivers.
 #
+obj-$(CONFIG_MV_ETH_LEGACY) += ../../arch/arm/plat-armada/mv_drivers_lsp/mv_network/mv_ethernet/
+obj-$(CONFIG_MV_ETH_NETA) += ../../arch/arm/plat-armada/mv_drivers_lsp/mv_neta/net_dev/
 
 obj-$(CONFIG_MII) += mii.o
 obj-$(CONFIG_MDIO) += mdio.o

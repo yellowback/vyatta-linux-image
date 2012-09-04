@@ -1,0 +1,1 @@
+SUPPORT_VANIR=y

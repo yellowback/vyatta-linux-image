@@ -255,6 +255,11 @@ static void tdi_reset (struct ehci_hcd *ehci)
 	reg_ptr = (u32 __iomem *)(((u8 __iomem *)ehci->regs) + USBMODE);
 	tmp = ehci_readl(ehci, reg_ptr);
 	tmp |= USBMODE_CM_HC;
+	/*
+	 * MRVL: Disable USB Streaming
+	 */
+	tmp |= (1 << 4);
+
 	/* The default byte access to MMR space is LE after
 	 * controller reset. Set the required endian mode
 	 * for transfer buffers to match the host microprocessor
@@ -1250,6 +1255,11 @@ MODULE_LICENSE ("GPL");
 #ifdef CONFIG_PLAT_ORION
 #include "ehci-orion.c"
 #define	PLATFORM_DRIVER		ehci_orion_driver
+#endif
+
+#ifdef CONFIG_PLAT_ARMADA
+#include "ehci_marvell.c"
+#define	PLATFORM_DRIVER		ehci_marvell_driver
 #endif
 
 #ifdef CONFIG_ARCH_IXP4XX

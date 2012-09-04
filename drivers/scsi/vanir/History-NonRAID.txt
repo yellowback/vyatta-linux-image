@@ -1,0 +1,332 @@
+================================================================================
+- Version: vanir 4.0.0.1531N
+- Date Release: 06/22/2011
+- Changes:     
+	1. Remove the retry EH for timeout request.
+- Related issue:
+	BT3951: [Vanir + Luigi] Kernel panic when shutdown system after several format unit commands.
+	BT3954: [vanir+luigi]Send diagnostic command cause luigi reset.
+	BT3972: ATA Pass through command should return check condition when CC=1.
+================================================================================
+- Version: vanir 4.0.0.1530N
+- Date Release: 05/20/2011
+- Changes:     
+	1. Add copyright and History-NonRAID file.
+- Related issue:
+	BT3940: [Vanir+Luigi2] Write buffer cmd update drive FW pkg failed.
+	BT3945: [Vanir+Luigi2] Write buffer cmd return aborted if execute during IO.
+	BT3948: [Vanir+Luigi2] IO stopped while executing write buffer cmd.
+	BT3949: [Vanir+Luigi2] Warnings during make.
+	BT3950: [Vanir+Luigi] Kernel Panic when send read capacity to virtual device.
+	BT3952: [Vanir+Luigi] Commands should be returned after timeout time.
+================================================================================
+- Version: vanir 4.0.0.1529N
+- Date Release: 05/11/2011
+- Changes:     
+	1. Clean up source code for NetApp.
+	2. Enhance error handling code.  
+- Related issue:
+	N/A
+================================================================================
+- Version: vanir 4.0.0.1528N
+- Date Release: 04/14/2011
+- Changes:       
+	1. Clean up some workaround code for Vanir C2.
+	2. Support Device ID 0x9580 for Vanir.
+- Related issue:
+	4518: System hang when connected over 2 expanders cascading to Vanir C2/C1.
+	4472: HD wake up feature using dd/fdisk command as Odin product.
+	4070: dud.config file should be placed at the same folder with install and modules folder in suse driverdisk.
+================================================================================
+- Version: vanir 4.0.0.1527N
+- Date Release: 04/07/2011
+- Changes:
+	1. Support ArmadaXP board and add a readme file.
+	2. Enable MXIC SPI flash support.
+	3. Do STP and SSP Link Layer reset when do mv_reset_phy Hard Reset. Sometimes Vanir ASIC can be stuck(vanir+VG).
+	4. Update PD Page function used during initializing PD id.
+	5. Modified PM error handling.
+- Related issue:
+	4401: [Linux Driver 1525N] Unable to detect drives behind Qriga
+	4459: Add support for SPI flash p/n ST Micro M25P40
+================================================================================
+- Version: vanir 4.0.0.1526N
+- Date Release: 03/10/2011
+- Changes:
+	1. Fix if hot plug disk when disk is initializing, it appears kernel panic issue.
+	2. Add DEF_SCSI_QCMD for kernel 2.6.37.
+	3. Unlock host->lock within queue_command() and clean up spin lock code for tasklet-enabled case.
+	4. Use Command Complete Interrupt Self-Clearing mode for MSI-enabled.
+	5. Add a module param "mv_msi_enable" for driver loading. (insmod mv94xx.ko mv_msi_enable=1)
+- Related issue:
+	4404: Dual vanir controller with Atmel 1033 25DF041A SSH SPI flash BIOS upgrade failure.
+	4418: [Linux Non RAID Driver]can't find SAS HDD after load driver when install OS.
+================================================================================
+- Version: vanir 4.0.0.1525N
+- Date Release: 01/27/2011
+- Changes:
+	1. Support Staggered SPIN UP feature.
+	2. Support PM25LD010C and enhance PM error handling.
+	3. Enhance Multi-LUN support.
+- Related issue:
+	3437: Add 0x2F read log ext commands to be compliant to ATA-8.
+================================================================================
+- Version: vanir 4.0.0.1524N
+- Date Release: 12/17/2010
+- Changes:
+	1. Disable Qriga Rx buffer 
+- Related issue:
+	3775: [Vanir+ Qriga C1]SATA HDDs dropped during IO
+	4208: Vanir+Val36+Luigi+SATA SSD, but enter SUSE system, can not find the SSD.
+================================================================================
+- Version: vanir 4.0.0.1523N
+- Date Release: 08/30/2010
+- Changes:
+	1. Support multiple LUN.
+	2. Disable ASIC Watchdog Timeout Workaround, verified it seems not effective under Linux.
+	3. Enhance code about IO stop and system hang when running stress test on Vanir+Valhalla with bad disks.
+- Related issue:
+	2674: [VanirC1] IO drop to 0 after 30 hours of SATA HDD IOstress on Valhalla36 and AIC expanders. 
+	3759: Only one disk of 2th expander can be detected when 2 Cascading expander+Hotplug in and out. 
+================================================================================
+- Version: vanir 4.0.0.1522N
+- Date Release: 08/19/2010
+- Changes:
+	1. Fix scsi id with phy id.
+	SCSI ID policy:
+		SCSI ID 0 ¨C 7:       disk connected directly from port 0 -7.
+		SCSI ID 8 ¨C MAX ID:  disk connected behind expander/PM.  
+	2. Save signature in pd info.
+- Related issue:
+	N/A
+================================================================================
+- Version: vanir 4.0.0.1521N
+- Date Release: 08/06/2010
+- Changes:
+	1. Fixed the issue that cannot insert driver.
+	2. Fixed the issue that lun 1 will be plug out when hotplug in.
+- Related issue:
+	N/A
+================================================================================
+- Version: vanir 4.0.0.1520N
+- Date Release: 08/03/2010
+- Changes:
+	1. Fixed issue that the big lock(disable cpu irq) withint tasklet BH and Timer handler results to system hang during hot-plug handling, reported by Flexstar.
+- Related issue:
+	N/A
+================================================================================
+- Version: vanir 4.0.0.1519N-VanGogh
+- Date Release: 07/05/2010
+- Changes:
+	N/A
+- Related issue:
+	3216: Add vendor unique command in Vanir non RAID driver.
+	3482: [VanGogh with Vanir]FIO failed on one of the Vangogh modules with customer IO config.
+	3159: Add asynch notification support to non RAID driver for Van Gogh.
+================================================================================
+- Version: vanir 4.0.0.1518N
+- Date Release: 07/05/2010
+- Changes:
+	N/A
+- Related issue:
+	2899: Firmware download using hdparm failed when using vanir to download to van gogh.
+================================================================================
+- Version: vanir 4.0.0.1517N
+- Date Release: 06/29/2010
+- Changes:
+	1. Disable Multi-LUN.
+	2. Support DIF. 
+	3. Modify for direct-attached SAS device hot-plug handling.
+- Related issue:
+	2717: Wrong number of expanders detected with maximum devices.  	
+================================================================================
+- Version: vanir 4.0.0.1516N
+- Date Release: 06/01/2010
+- Changes:
+	1. Disable Multi-LUN.
+	2. Support DIF. 
+	3. Enhance core driver SAT part for ATA passthrough command.
+- Related issue:
+	2899: Firmware download using hdparm failed when using vanir to download to VanGogh.  	
+	3185: First party DMA commands sent through pass-through failure.
+================================================================================
+- Version: vanir 4.0.0.1515N
+- Date Release: 05/25/2010
+- Changes:
+	1. Disable Multi-LUN.
+	2. Support DIF. 
+	3. Fixed wrongly return ATA Status Return descriptor in sense buffer not data buffer for ATA passthrough command "Return Response Information" protocol. 
+	4. For successful ATA passthrough command with ck_cond bit set, fill sense data with the E_Status register value(PIO setup FIS:dw3) instead of Status register value(dw0).
+- Related issue:
+	3153:Vanir C1:only part of HDDs can be recognised after do hotplug.  
+================================================================================
+- Version: vanir 4.0.0.1514N
+- Date Release: 05/10/2010
+- Changes:
+	1. Support multiple LUN.
+- Related issue:
+	N/A
+================================================================================
+- Version: vanir 4.0.0.1513N
+- Date Release: 04/29/2010
+- Changes:
+	1. Disable Multi-LUN.
+	2. Support DIF. 
+	3. Fixed wrongly parsed sense data about IDNF error for SCSI READ/WRITE commands.
+	4. Fixed wrongly parsed sense data about IDNF error for pass-through ATA read/write commands.
+	5. Support SCSI 6-byte CDB Read/Write.
+	6. Support SATA Power-up in Standby feature.
+	7. Fixed code error within load balance function, which may result to replace driver or hot-plug with expander kernel panic.
+- Related issue:
+	2691:System keeps printing out "CORE: Sata_get_register_set no register set" after starting IO. 
+================================================================================
+- Version: vanir 4.0.0.1512N
+- Date Release: 02/23/2010
+- Changes:
+	1. Based on 1510N source code, not include multi-lun code.	
+	2. Speed up disk detection when hot plug expander.
+	3. Enhance core driver Error Handling.
+- Related issue:
+	N/A  
+================================================================================
+- Version: vanir 4.0.1.1510N
+- Date Release: 02/10/2010
+- Changes:
+	1. Based on 1510N source code, not include multi-lun code.	
+	2. Speed up disk detection when hot plug expander.
+- Related issue:
+	N/A  
+================================================================================
+- Version: vanir 4.0.0.1511N
+- Date Release: 02/01/2010
+- Changes:
+	1. Support Multi-LUN target device.
+	2. Avoid missing hot plug event, rescan host if message queue is full. 
+	3. Merged core driver from windows branch.
+	4. Add check ses support page step for internal ses_state_machine.
+- Related issue:
+	N/A  
+================================================================================
+- Version: vanir 4.0.0.1510N
+- Date Release: 01/28/2010
+- Changes:
+	1. Based on 1507N_rc2, not include multi-lun code.	
+	2. Increase Max target number to 1024, not report virtual device.
+- Related issue:
+	N/A  
+================================================================================
+- Version: vanir 4.0.0.1509N
+- Date Release: 01/26/2010
+- Changes:
+	1. If scsi_add_device() return failed, notify core driver to remove the internal device to keep consistent.
+	2. Do not notify os repeatedly for enclosure device when hot-plug devices behind the expander.
+	3. Enhance core driver error handling.
+	4. Remove reset phy step for expander state machine.
+	5. Increase delay for phy change before handling broadcast, related issue #3164.
+	6. Handle CNCTN_RT_NT_SPRTD_ERR(0x80000010) error as timeout error.
+- Related issue:
+	3164: Error info(0002) was showed after power off Valhalla. 
+	3169: Not all PD can be detected after driver insmod until they're hot-plugged.  
+================================================================================
+- Version: vanir 4.0.0.1508N
+- Date Release: 01/14/2010
+- Changes:
+	1. Add multiple LUN support.
+	2. Added SAT device support.
+	3. Fixed issue - memory cache allocate failed for duplicate name.
+	4. Add IBM UEFI Server Motherboard IO Workaround.
+- Related issue:
+	2702: [LSI Expander SASX28] Linux still show enclosure info after power off expander.                                
+================================================================================
+- Version: vanir 4.0.0.1507N
+- Date Release: 01/05/2010
+- Changes:
+	1. Support Florence.
+	2. Fixed issue - memory cache allocate failed for duplicate name
+	3. Support PCIE status showed in MRU&CLI for odin&vanir linux driver.
+	4. Fixed Vanir C1 + PMC/Valhalla 36 hot-plug during IO, re-pluggin cable smp request watchdog timeout issue.
+- Related issue:
+	N/A
+================================================================================
+- Version: vanir 4.0.0.1506N(for C1)
+- Date Release: 12/24/2009
+- Changes:
+	1. Support C1.
+	2. Add debug_mode attribute to hba host for debug use.
+	3. Increase message queue depth = MAX target device to support more than 64 target devices hot-plug.
+	4. Fixed a pd page issue for over 128 devices.
+	5. Update Linux driver ffc() function to fix unassociated FIS received error interrupt when IO on >33 disks.
+	6. Update set_phy_rate function to fix failed to set vanir work under 3Gbps phy-rate.
+	7. Add SCSI_CMD_REQUEST_SENSE command handler for virtual device for linux nonraid driver.
+- Related issue:
+	2063£ºIf set phy rate to 3Gb/s, can't take effect on 6Gb SAS HDD."
+	2383: [vanir+valhalla36] No HDD or expander info shown on Linux MRU.
+	2499: [VanirC0+Valhalla36]Cascading detection failed if add >33 disks.
+	2555: [VanirC0+Valhalla36]detection failed if hotplug with 3 cascading Valhalla.
+================================================================================
+- Version: vanir 4.0.0.1505N
+- Date Release: 12/08/2009
+- Changes: 
+	1. Merge code to trunk folder.
+	2. Fixed issue that can not detect SAS disk connected directly after re-plug in SAS disk.  
+- Related issue:
+	N/A    
+================================================================================
+- Version: vanir 4.0.0.1504N
+- Date Release: 12/04/2009
+- Changes: 
+	1. Fixed issue -- Vanir + Valhalla > 33 SATA disks,  time out disk cause remain disk IO stopped. Retry time out request once to avoid reset disk which cause broadcast.
+	2. Expander command time out or watch dog time out when plug out/in PMC cable issue. Disabled ¡°PHY State Machine Timeout¡± interrupt and get better result. 
+- Related issue:
+	N/A
+================================================================================
+- Version: vanir 4.0.0.1503N(for C0)
+- Date Release: 12/02/2009
+- Changes: 
+	1. Fixed issue - can not find SATA disk connected again when hot plug expander or disks.
+- Related issue:
+	N/A
+================================================================================
+- Version: vanir 4.0.0.1502N(for C0)
+- Date Release: 11/02/2009
+- Changes: 
+	1. Clean up PHY Tunning structure related and enable set phy tunning data from HBA page for C0 controller. This can enhance performance.
+	2. Move product folder out from core. 
+	3. In order to avoid too many ¡°invalid request¡± and retry, filter LD/Block API command in HBA module, not directly send to core module.
+- Related issue:
+	N/A
+================================================================================
+- Version: vanir 4.0.0.1501N
+- Date Release: 10/22/2009
+- Changes: 
+	1. Trash size to fix hot-plug related issue.
+	2. For linux driver, if allocate memory failed, return "Out of memory" error , not ASSERT.
+	3. Modify driver code to support CLI flashrw command.
+	4. Support MV_MAX_TARGET_NUMBER(128) scsi devices.
+	5. Fix hdparm -i get inverse param info(related issue 2168).
+- Related issue:
+	2071: CLI flashrw cmd failed.
+================================================================================
+- Version: vanir 4.0.0.1500N
+- Date Release: 09/02/2009
+- Changes:
+	1. Set smp timeout register to max to fix smp request watchdog timeout.
+	2. Cleanup and fix init_queue_count value is not correct problem.
+	3. Rewrite the "get expander information" API.
+	4. Change the discover virtual request error handling.
+	5. Only return current page when mode sense for SATA.
+	6. Fixed the issue that hdparm -i xxxx doesn't work.
+	7. Fix PD page over writing another uninitialized device if PD page is full.
+- Related issue:
+	1644: The disks connected to Valhalla12 still be showed by 'lsscsi' after power off Valhalla12
+	1969: Reinserted SAS disk of FUJITSU MBA3073RC failed to be found in system.
+	1978: kernel panic if hotplug Vitesse expander SATA/SAS.
+	1955: Plug in a PD and then system met kernel panic.
+	2001: Install RHEL4.8 on free disk fail.
+	2002: Insmod mv94xx.ko under RHEL AS 4U8 64bit failed.
+	2016: Hdparm: it take too long to get state of a PD after put it sleep.
+	2040: Kernel Panic when connecting HDDs with PM.
+	2061: Kernel panic when running tio-test under RHEL AS 4U8.
+	2094: Kernel panic when install MRU under RHEL AS 4U8.
+	2113: Timeout when run  tiotest on md.
+

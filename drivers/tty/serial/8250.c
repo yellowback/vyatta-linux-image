@@ -483,6 +483,20 @@ static void dwapb_serial_out(struct uart_port *p, int offset, int value)
 {
 	int save_offset = offset;
 	offset = map_8250_out_reg(p, offset) << p->regshift;
+#ifdef CONFIG_PLAT_ARMADA
+	/* If we are accessing DLH (0x4), DLL (0x0), LCR(0xC) or 0x1C
+	** we need to make sure that the busy bit is cleared in USR register.
+	*/
+	if ((((readb(p->membase + 0xC) & 0x80) &&
+	     ((save_offset == UART_DLL) || (save_offset == UART_DLM) ||
+	      (offset == 0x1C))) ||
+	     (save_offset == UART_LCR)) && !(readb(p->membase + 0x14) & 0x1)) {
+		unsigned int status;
+		do {
+			status = *((volatile u32 *)p->private_data);
+		} while (status & 0x1);
+	}
+#endif
 	dwapb_save_out_value(p, save_offset, value);
 	writeb(value, p->membase + offset);
 	dwapb_check_clear_ier(p, save_offset);
@@ -1107,7 +1121,7 @@ static void autoconfig_16550a(struct uart_8250_port *up)
 			 */
 			DEBUG_AUTOCONF("Xscale ");
 			up->port.type = PORT_XSCALE;
-			up->capabilities |= UART_CAP_UUE | UART_CAP_RTOIE;
+			up->capabilities |= UART_CAP_UUE;
 			return;
 		}
 	} else {
@@ -1808,7 +1822,9 @@ static void serial8250_timeout(unsigned long data)
 	unsigned int iir;
 
 	iir = serial_in(up, UART_IIR);
+#ifndef CONFIG_PLAT_ARMADA
 	if (!(iir & UART_IIR_NO_INT))
+#endif
 		serial8250_handle_port(up);
 	mod_timer(&up->timer, jiffies + uart_poll_timeout(&up->port));
 }

@@ -48,6 +48,7 @@
 struct secondary_data secondary_data;
 
 enum ipi_msg_type {
+	IPI_WAKE = 0,
 	IPI_TIMER = 2,
 	IPI_RESCHEDULE,
 	IPI_CALL_FUNC,
@@ -278,6 +279,9 @@ asmlinkage void __cpuinit secondary_start_kernel(void)
 {
 	struct mm_struct *mm = &init_mm;
 	unsigned int cpu = smp_processor_id();
+#ifdef CONFIG_MACH_ARMADA_XP_FPGA
+	unsigned int cpurev;
+#endif
 
 	/*
 	 * All kernel threads share the same mm context; grab a
@@ -290,7 +294,13 @@ asmlinkage void __cpuinit secondary_start_kernel(void)
 	enter_lazy_tlb(mm, current);
 	local_flush_tlb_all();
 
+#ifdef CONFIG_MACH_ARMADA_XP_FPGA
+	__asm__ __volatile__("mrc p15, 1, %0, c0, c0, 7   @ read CPU ID reg\n"
+		: "=r" (cpurev) :: "memory");
+	printk("CPU%u: FPGA Booted secondary processor (ID 0x%04x)\n", cpu, (cpurev & 0xFFFF));
+#else
 	printk("CPU%u: Booted secondary processor\n", cpu);
+#endif
 
 	cpu_init();
 	preempt_disable();
@@ -442,6 +452,20 @@ u64 smp_irq_stat_cpu(unsigned int cpu)
  */
 static DEFINE_PER_CPU(struct clock_event_device, percpu_clockevent);
 
+#if defined(CONFIG_ARCH_ARMADA_XP) && defined(CONFIG_PERF_EVENTS)
+void show_local_pmu_irqs(struct seq_file *p, int prec)
+{
+	 unsigned int cpu;
+
+	 seq_printf(p, "%*s: ", prec, "LOC");
+	 
+	 for_each_present_cpu(cpu)
+		seq_printf(p, "%10u ", irq_stat[cpu].local_pmu_irqs);
+	 
+	 seq_putc(p, '\n');
+}
+#endif
+
 static void ipi_timer(void)
 {
 	struct clock_event_device *evt = &__get_cpu_var(percpu_clockevent);
@@ -562,11 +586,13 @@ asmlinkage void __exception_irq_entry do_IPI(int ipinr, struct pt_regs *regs)
 {
 	unsigned int cpu = smp_processor_id();
 	struct pt_regs *old_regs = set_irq_regs(regs);
-
 	if (ipinr >= IPI_TIMER && ipinr < IPI_TIMER + NR_IPI)
 		__inc_irq_stat(cpu, ipi_irqs[ipinr - IPI_TIMER]);
 
 	switch (ipinr) {
+	case IPI_WAKE:
+		break;
+
 	case IPI_TIMER:
 		ipi_timer();
 		break;
@@ -620,10 +646,8 @@ void smp_send_stop(void)
 		pr_warning("SMP: failed to stop secondary CPUs\n");
 }
 
-/*
- * not supported here
- */
 int setup_profiling_timer(unsigned int multiplier)
 {
 	return -EINVAL;
 }
+

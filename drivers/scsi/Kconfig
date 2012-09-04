@@ -347,6 +347,17 @@ menuconfig SCSI_LOWLEVEL
 
 if SCSI_LOWLEVEL && SCSI
 
+config SCSI_MV_THOR
+        tristate "Marvell Storage Controller 6121/6122/6141/6145"
+        depends on SCSI && BLK_DEV_SD
+        help
+                Provides support for Marvell thor Storage Controller series.
+
+config SCSI_MV_VANIR
+        tristate "Marvell Storage Controller VANIR"
+        depends on SCSI && BLK_DEV_SD
+        help
+                Provides support for Marvell thor Storage Controller series.
 config ISCSI_TCP
 	tristate "iSCSI Initiator over TCP/IP"
 	depends on SCSI && INET

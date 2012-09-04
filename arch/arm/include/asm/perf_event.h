@@ -24,6 +24,7 @@ enum arm_perf_pmu_ids {
 	ARM_PERF_PMU_ID_V6MP,
 	ARM_PERF_PMU_ID_CA8,
 	ARM_PERF_PMU_ID_CA9,
+	MRVL_PERF_PMU_ID_PJ4B,
 	ARM_NUM_PMU_IDS,
 };
 

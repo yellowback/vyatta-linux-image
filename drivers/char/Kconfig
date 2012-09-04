@@ -616,5 +616,15 @@ config MSM_SMD_PKT
 	  Enables userspace clients to read and write to some packet SMD
 	  ports via device interface for MSM chipset.
 
+config OBS_LED
+	bool "OpenBlockS Family LED driver"
+	depends on MACH_OPENBLOCKS
+	default y
+
+config OBS_PUSHSW
+	bool "OpenBlockS Family PUSH SW driver"
+	depends on MACH_OPENBLOCKS
+	default y
+
 endmenu
 

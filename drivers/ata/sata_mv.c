@@ -2392,10 +2392,19 @@ static struct ata_queued_cmd *mv_get_active_qc(struct ata_port *ap)
 {
 	struct mv_port_priv *pp = ap->private_data;
 	struct ata_queued_cmd *qc;
-
+	struct ata_link *link = NULL;
+	
 	if (pp->pp_flags & MV_PP_FLAG_NCQ_EN)
 		return NULL;
-	qc = ata_qc_from_tag(ap, ap->link.active_tag);
+
+	ata_for_each_link(link, ap, EDGE)
+		if (ata_link_active(link))
+			break;
+
+        if (!link)
+                link = &ap->link;
+
+	qc = ata_qc_from_tag(ap, link->active_tag);
 	if (qc && !(qc->tf.flags & ATA_TFLAG_POLLING))
 		return qc;
 	return NULL;
@@ -2783,6 +2792,7 @@ static void mv_process_crpb_entries(struct ata_port *ap, struct mv_port_priv *pp
 	in_index = (readl(port_mmio + EDMA_RSP_Q_IN_PTR)
 			>> EDMA_RSP_Q_PTR_SHIFT) & MV_MAX_Q_DEPTH_MASK;
 
+		dma_io_sync();
 	/* Process new responses from since the last time we looked */
 	while (in_index != pp->resp_idx) {
 		unsigned int tag;

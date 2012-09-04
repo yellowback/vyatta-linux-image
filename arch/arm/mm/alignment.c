@@ -933,8 +933,10 @@ static int __init alignment_init(void)
 	 * making any progress.
 	 */
 	if (cpu_architecture() >= CPU_ARCH_ARMv6 && (cr_alignment & CR_U)) {
+#ifndef CONFIG_ENABLE_UNALINGED_ACCESS_FAULT
 		cr_alignment &= ~CR_A;
 		cr_no_alignment &= ~CR_A;
+#endif
 		set_cr(cr_alignment);
 		ai_usermode = UM_FIXUP;
 	}

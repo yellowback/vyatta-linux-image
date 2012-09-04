@@ -198,9 +198,17 @@
 #ifdef CONFIG_SMP
 #if __LINUX_ARM_ARCH__ >= 7
 	.ifeqs "\mode","arm"
+#ifdef CONFIG_SHEEVA_ERRATA_ARM_CPU_6075
+	ALT_SMP(dsb)
+#else
 	ALT_SMP(dmb)
+#endif
 	.else
+#ifdef CONFIG_SHEEVA_ERRATA_ARM_CPU_6075
+	ALT_SMP(W(dsb))
+#else
 	ALT_SMP(W(dmb))
+#endif
 	.endif
 #elif __LINUX_ARM_ARCH__ == 6
 	ALT_SMP(mcr	p15, 0, r0, c7, c10, 5)	@ dmb

@@ -1320,12 +1320,14 @@ static struct vm_struct *__get_vm_area_node(unsigned long size,
 	}
 
 	size = PAGE_ALIGN(size);
-	if (unlikely(!size))
+	if (unlikely(!size)){
 		return NULL;
+	}
 
 	area = kzalloc_node(sizeof(*area), gfp_mask & GFP_RECLAIM_MASK, node);
-	if (unlikely(!area))
+	if (unlikely(!area)){
 		return NULL;
+	}
 
 	/*
 	 * We always allocate a guard page.

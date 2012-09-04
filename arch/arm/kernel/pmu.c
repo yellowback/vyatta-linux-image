@@ -90,6 +90,10 @@ static int
 set_irq_affinity(int irq,
 		 unsigned int cpu)
 {
+
+#if defined (CONFIG_CPU_SHEEVA_PJ4B_V6) || defined (CONFIG_CPU_SHEEVA_PJ4B_V7)
+	return 0;
+#else
 #ifdef CONFIG_SMP
 	int err = irq_set_affinity(irq, cpumask_of(cpu));
 	if (err)
@@ -98,6 +102,7 @@ set_irq_affinity(int irq,
 	return err;
 #else
 	return -EINVAL;
+#endif
 #endif
 }
 

@@ -26,6 +26,10 @@
 #include <asm/highmem.h>
 #include <asm/traps.h>
 
+#if defined(CONFIG_MV_SUPPORT_64KB_PAGE_SIZE) && defined(CONFIG_HIGHMEM)
+#include <asm/fixmap.h>
+#endif
+
 #include <asm/mach/arch.h>
 #include <asm/mach/map.h>
 
@@ -115,6 +119,7 @@ static int __init early_cachepolicy(char *p)
 	}
 	if (i == ARRAY_SIZE(cache_policies))
 		printk(KERN_ERR "ERROR: unknown or unsupported cache policy\n");
+#if !defined (CONFIG_CPU_SHEEVA_PJ4B_V6) && !defined(CONFIG_CPU_SHEEVA_PJ4B_V7)
 	/*
 	 * This restriction is partly to do with the way we boot; it is
 	 * unpredictable to have memory mapped using two different sets of
@@ -126,6 +131,7 @@ static int __init early_cachepolicy(char *p)
 		printk(KERN_WARNING "Only cachepolicy=writeback supported on ARMv6 and later\n");
 		cachepolicy = CPOLICY_WRITEBACK;
 	}
+#endif
 	flush_cache_all();
 	set_cr(cr_alignment);
 	return 0;
@@ -306,8 +312,10 @@ static void __init build_mem_type_table(void)
 			cachepolicy = CPOLICY_WRITEBACK;
 		ecc_mask = 0;
 	}
-	if (is_smp())
+	/*if (is_smp())*/
+#if defined(CONFIG_SMP) || defined (CONFIG_AURORA_IO_CACHE_COHERENCY)
 		cachepolicy = CPOLICY_WRITEALLOC;
+#endif
 
 	/*
 	 * Strip out features not present on earlier architectures.
@@ -429,7 +437,7 @@ static void __init build_mem_type_table(void)
 		mem_types[MT_MINICLEAN].prot_sect |= PMD_SECT_APX|PMD_SECT_AP_WRITE;
 		mem_types[MT_CACHECLEAN].prot_sect |= PMD_SECT_APX|PMD_SECT_AP_WRITE;
 
-		if (is_smp()) {
+#if defined(CONFIG_SMP) || defined (CONFIG_SHEEVA_ERRATA_ARM_CPU_5114)
 			/*
 			 * Mark memory with the "shared" attribute
 			 * for SMP systems
@@ -445,7 +453,7 @@ static void __init build_mem_type_table(void)
 			mem_types[MT_MEMORY].prot_pte |= L_PTE_SHARED;
 			mem_types[MT_MEMORY_NONCACHED].prot_sect |= PMD_SECT_S;
 			mem_types[MT_MEMORY_NONCACHED].prot_pte |= L_PTE_SHARED;
-		}
+#endif
 	}
 
 	/*
@@ -531,7 +539,11 @@ static void __init *early_alloc(unsigned long sz)
 static pte_t * __init early_pte_alloc(pmd_t *pmd, unsigned long addr, unsigned long prot)
 {
 	if (pmd_none(*pmd)) {
-		pte_t *pte = early_alloc(PTE_HWTABLE_OFF + PTE_HWTABLE_SIZE);
+#ifdef CONFIG_MV_SUPPORT_64KB_PAGE_SIZE
+	pte_t *pte = early_alloc(PAGE_SIZE);
+#else
+	pte_t *pte = early_alloc(PTE_HWTABLE_OFF + PTE_HWTABLE_SIZE);
+#endif
 		__pmd_populate(pmd, __pa(pte), prot);
 	}
 	BUG_ON(pmd_bad(*pmd));
@@ -727,7 +739,11 @@ void __init iotable_init(struct map_desc *io_desc, int nr)
 		create_mapping(io_desc + i);
 }
 
+#ifdef CONFIG_FB_DOVE
+static void*  __initdata vmalloc_min = (void *)(VMALLOC_END - SZ_128M - SZ_32M);
+#else
 static void * __initdata vmalloc_min = (void *)(VMALLOC_END - SZ_128M);
+#endif /* CONFIG_FB_DOVE */
 
 /*
  * vmalloc=size forces the vmalloc area to be exactly 'size'
@@ -831,6 +847,7 @@ void __init sanity_check_meminfo(void)
 
 		j++;
 	}
+#ifndef CONFIG_ARCH_ARMADA_XP
 #ifdef CONFIG_HIGHMEM
 	if (highmem) {
 		const char *reason = NULL;
@@ -850,6 +867,7 @@ void __init sanity_check_meminfo(void)
 				j--;
 		}
 	}
+#endif
 #endif
 	meminfo.nr_banks = j;
 	memblock_set_current_limit(lowmem_limit);
@@ -908,6 +926,30 @@ void __init arm_mm_memblock_reserve(void)
 	memblock_reserve(PHYS_OFFSET, __pa(swapper_pg_dir) - PHYS_OFFSET);
 #endif
 }
+
+#if defined(CONFIG_MV_SUPPORT_64KB_PAGE_SIZE) && defined(CONFIG_HIGHMEM)
+/* Create L1 Mapping for High-Mem pages. */
+static void __init map_highmem_pages(void)
+{
+	struct map_desc map;
+	unsigned long addr;
+	pmd_t *pmd;
+	pte_t *pte;
+
+	for (addr = FIXADDR_START; addr < FIXADDR_TOP; addr += SZ_1M) {
+		map.pfn = __phys_to_pfn(virt_to_phys((void*)addr));
+		map.virtual = addr;
+		map.length = PAGE_SIZE;
+		map.type = MT_DEVICE;
+		create_mapping(&map);
+
+		/* Clear the L2 entry. */
+		pmd = pmd_offset(pgd_offset_k(addr), addr);
+		pte = pte_offset_kernel(pmd, addr);
+		set_pte_ext(pte, __pte(0), 0);
+	}
+}
+#endif
 
 /*
  * Set up device the mappings.  Since we clear out the page tables for all
@@ -975,6 +1017,10 @@ static void __init devicemaps_init(struct machine_desc *mdesc)
 		map.type = MT_LOW_VECTORS;
 		create_mapping(&map);
 	}
+
+#if defined(CONFIG_MV_SUPPORT_64KB_PAGE_SIZE) && defined(CONFIG_HIGHMEM)
+	map_highmem_pages();
+#endif
 
 	/*
 	 * Ask the machine support to map in the statically mapped devices.

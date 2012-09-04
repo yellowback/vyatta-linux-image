@@ -1,0 +1,13 @@
+This driver is for vmware ESX4.0, use VMware ESX4.0 DDK to build the driver.
+Two build script files for build the driver.
+build_esx4_raid is for raid driver.
+build_esx4_no_raid is for none raid driver.
+please copy all the code to following folder before compiling the code.
+/opt/vmware/ddk/src/vmkdrivers/src26/drivers/scsi/mv94xx
+please use correct CLI tool to work with this driver, and CLI tool should be
+built under 64bit Linux OS, and then work at vmware system.
+
+unresolved issue:
+1. SCSI device can not be removed from host with hot plug out and delete raid,
+   reboot is needed after raid creation and removing.
+2. Dual card are not supported yet for raid driver, especially with create/delete raid.

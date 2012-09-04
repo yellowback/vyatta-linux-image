@@ -159,7 +159,11 @@ int __init rd_load_image(char *from)
 {
 	int res = 0;
 	int in_fd, out_fd;
+#if defined(CONFIG_MACH_OPENBLOCKS)
+	long rd_blocks, devblocks;
+#else
 	unsigned long rd_blocks, devblocks;
+#endif
 	int nblocks, i, disk;
 	char *buf = NULL;
 	unsigned short rotate = 0;

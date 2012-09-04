@@ -69,6 +69,10 @@ struct rtable {
 	u32			rt_peer_genid;
 	struct inet_peer	*peer; /* long-living peer info */
 	struct fib_info		*fi; /* for client ref to shared metrics */
+
+#if defined(CONFIG_MV_ETH_NFP_FIB_LEARN)
+	bool 			nfp;
+#endif /* CONFIG_MV_ETH_NFP_FIB_LEARN */
 };
 
 static inline bool rt_is_input_route(struct rtable *rt)

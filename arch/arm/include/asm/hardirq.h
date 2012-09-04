@@ -9,6 +9,7 @@
 
 typedef struct {
 	unsigned int __softirq_pending;
+	unsigned int local_pmu_irqs;
 #ifdef CONFIG_LOCAL_TIMERS
 	unsigned int local_timer_irqs;
 #endif

@@ -314,9 +314,10 @@ static int check_syslog_permissions(int type, bool from_file)
 		return 0;
 
 	if (syslog_action_restricted(type)) {
-		if (capable(CAP_SYSLOG))
+		if (capable(CAP_SYSLOG) || capable(CAP_SYS_ADMIN))
 			return 0;
 		/* For historical reasons, accept CAP_SYS_ADMIN too, with a warning */
+		/*
 		if (capable(CAP_SYS_ADMIN)) {
 			printk_once(KERN_WARNING "%s (%d): "
 				 "Attempt to access syslog with CAP_SYS_ADMIN "
@@ -324,6 +325,7 @@ static int check_syslog_permissions(int type, bool from_file)
 				 current->comm, task_pid_nr(current));
 			return 0;
 		}
+		*/
 		return -EPERM;
 	}
 	return 0;

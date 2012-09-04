@@ -18,6 +18,9 @@
 #include <linux/stop_machine.h>
 #include <linux/interrupt.h>
 #include <linux/kallsyms.h>
+#ifdef CONFIG_SHEEVA_ERRATA_ARM_CPU_ADD_DELAY_FOR_STOP_MACHINE
+#include <linux/delay.h>
+#endif
 
 #include <asm/atomic.h>
 
@@ -440,6 +443,9 @@ static int stop_machine_cpu_stop(void *data)
 
 	/* Simple state machine */
 	do {
+#ifdef CONFIG_SHEEVA_ERRATA_ARM_CPU_ADD_DELAY_FOR_STOP_MACHINE
+		udelay(cpu);
+#endif
 		/* Chill out and ensure we re-read stopmachine_state. */
 		cpu_relax();
 		if (smdata->state != curstate) {

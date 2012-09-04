@@ -143,7 +143,7 @@ static struct srcu_struct pmus_srcu;
  *   1 - disallow cpu events for unpriv
  *   2 - disallow kernel profiling for unpriv
  */
-int sysctl_perf_event_paranoid __read_mostly = 1;
+int sysctl_perf_event_paranoid __read_mostly = -1;
 
 /* Minimum for 512 kiB + 1 user control page */
 int sysctl_perf_event_mlock __read_mostly = 512 + (PAGE_SIZE / 1024); /* 'free' kiB per user */
@@ -6116,6 +6116,7 @@ struct pmu *perf_init_event(struct perf_event *event)
 	pmu = idr_find(&pmu_idr, event->attr.type);
 	rcu_read_unlock();
 	if (pmu) {
+		event->pmu=pmu;
 		ret = pmu->event_init(event);
 		if (ret)
 			pmu = ERR_PTR(ret);
@@ -6123,6 +6124,7 @@ struct pmu *perf_init_event(struct perf_event *event)
 	}
 
 	list_for_each_entry_rcu(pmu, &pmus, entry) {
+		event->pmu = pmu;
 		ret = pmu->event_init(event);
 		if (!ret)
 			goto unlock;
@@ -6153,7 +6155,6 @@ perf_event_alloc(struct perf_event_attr *attr, int cpu,
 	struct perf_event *event;
 	struct hw_perf_event *hwc;
 	long err;
-
 	if ((unsigned)cpu >= nr_cpu_ids) {
 		if (!task || cpu != -1)
 			return ERR_PTR(-EINVAL);
@@ -6245,8 +6246,7 @@ done:
 		return ERR_PTR(err);
 	}
 
-	event->pmu = pmu;
-
+//	event->pmu = pmu;
 	if (!event->parent) {
 		if (event->attach_state & PERF_ATTACH_TASK)
 			jump_label_inc(&perf_sched_events);

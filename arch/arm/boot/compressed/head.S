@@ -123,6 +123,9 @@ start:
 		.rept	7
 		mov	r0, r0
 		.endr
+#ifdef CONFIG_BE8_ON_LE
+		setend	be
+#endif
    ARM(		mov	r0, r0		)
    ARM(		b	1f		)
  THUMB(		adr	r12, BSYM(1f)	)
@@ -584,6 +587,11 @@ __arm6_mmu_cache_on:
 
 __common_mmu_cache_on:
 #ifndef CONFIG_THUMB2_KERNEL
+#ifdef CONFIG_SHEEVA_ERRATA_ARM_CPU_4948
+		mrc 	p15, 1, r1, c15, c1, 0
+		orr     r1, r1, #1			@ Disable L0 cache.
+		mcr 	p15, 1, r1, c15, c1, 0
+#endif
 #ifndef DEBUG
 		orr	r0, r0, #0x000d		@ Write buffer, mmu
 #endif
@@ -772,9 +780,19 @@ proc_types:
 		W(b)	__armv4_mmu_cache_on
 		W(b)	__armv4_mmu_cache_off
 		W(b)	__armv5tej_mmu_cache_flush
-
+#ifdef CONFIG_CPU_SHEEVA_PJ4B_V6
+		.word	0x000f0000		@ Marvell PJ4B ARMv6
+		.word	0x000f0000
+#else
 		.word	0x0007b000		@ ARMv6
 		.word	0x000ff000
+#endif
+		W(b)	__armv4_mmu_cache_on
+		W(b)	__armv4_mmu_cache_off
+		W(b)	__armv6_mmu_cache_flush
+
+		.word	0x560f5810		@ Marvell PJ4 ARMv6
+		.word	0xff0ffff0
 		W(b)	__armv4_mmu_cache_on
 		W(b)	__armv4_mmu_cache_off
 		W(b)	__armv6_mmu_cache_flush

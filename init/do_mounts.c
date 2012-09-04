@@ -29,6 +29,9 @@ int root_mountflags = MS_RDONLY | MS_SILENT;
 static char * __initdata root_device_name;
 static char __initdata saved_root_name[64];
 static int __initdata root_wait;
+#if defined(CONFIG_MACH_OPENBLOCKS)
+extern int __initdata mount_initrd;
+#endif
 
 dev_t ROOT_DEV;
 
@@ -57,6 +60,17 @@ static int __init readwrite(char *str)
 
 __setup("ro", readonly);
 __setup("rw", readwrite);
+
+#if defined(CONFIG_MACH_OPENBLOCKS)
+int __initdata no_flashcfg;
+
+static int __init exec_flashcfg(char * str)
+{
+	no_flashcfg = simple_strtoul(str,NULL,0);
+	return 1;
+}
+__setup("noflashcfg=", exec_flashcfg);
+#endif
 
 #ifdef CONFIG_BLOCK
 /**
@@ -465,6 +479,10 @@ void __init prepare_namespace(void)
 {
 	int is_floppy;
 
+#if defined(CONFIG_MACH_OPENBLOCKS)
+	int real_root_mountflags = root_mountflags;
+#endif
+
 	if (root_delay) {
 		printk(KERN_INFO "Waiting %dsec before mounting root device...\n",
 		       root_delay);
@@ -512,9 +530,35 @@ void __init prepare_namespace(void)
 	if (is_floppy && rd_doload && rd_load_disk(0))
 		ROOT_DEV = Root_RAM0;
 
+/* write able root mount if load user configuration from flash necessary. */
+#if defined(CONFIG_MACH_OPENBLOCKS)
+	if ((MAJOR(ROOT_DEV) == RAMDISK_MAJOR) && (MINOR(ROOT_DEV) == 0))
+	{
+		// read and write
+		root_mountflags &= ~MS_RDONLY;
+	}
+#endif
+
 	mount_root();
 out:
 	devtmpfs_mount("dev");
 	sys_mount(".", "/", NULL, MS_MOVE, NULL);
 	sys_chroot((const char __user __force *)".");
+#if defined(CONFIG_MACH_OPENBLOCKS)
+	if ((no_flashcfg == 0) && mount_initrd) {
+		root_mountflags = real_root_mountflags;
+		printk("[prepare_namespace] Executing flashcfg...\n");
+		if ((MAJOR(ROOT_DEV) == RAMDISK_MAJOR) && (MINOR(ROOT_DEV) == 0)) {
+			int pid,i;
+			pid = kernel_thread(do_restore, "/usr/sbin/flashcfg", SIGCHLD);
+			if (pid > 0) {
+				while (pid != sys_wait4(-1, &i, 0, NULL))
+					yield();
+			}
+			else
+				printk("[prepare_namespace] Error starting restore thread! \n");
+		}
+		printk("[prepare_namespace] Finished executing flashcfg\n");
+	}
+#endif /* CONFIG_MACH_OPENBLOCKS */
 }

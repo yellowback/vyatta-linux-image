@@ -50,4 +50,6 @@ obj-$(CONFIG_MTD_NAND_MPC5121_NFC)	+= mpc5121_nfc.o
 obj-$(CONFIG_MTD_NAND_RICOH)		+= r852.o
 obj-$(CONFIG_MTD_NAND_JZ4740)		+= jz4740_nand.o
 
+obj-$(CONFIG_MTD_NAND_NFC)			+= ../../../arch/arm/plat-armada/mv_drivers_lsp/mv_mtd/
+
 nand-objs := nand_base.o nand_bbt.o

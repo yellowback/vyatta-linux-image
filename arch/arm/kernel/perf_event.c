@@ -26,6 +26,11 @@
 #include <asm/pmu.h>
 #include <asm/stacktrace.h>
 
+#ifdef CONFIG_ARCH_ARMADA_XP
+int pmu_request_irq(int irq, irq_handler_t handler);
+void pmu_free_irq(int irq);
+#endif
+
 static struct platform_device *pmu_device;
 
 /*
@@ -384,7 +389,6 @@ validate_group(struct perf_event *event)
 static irqreturn_t armpmu_platform_irq(int irq, void *dev)
 {
 	struct arm_pmu_platdata *plat = dev_get_platdata(&pmu_device->dev);
-
 	return plat->handle_irq(irq, dev, armpmu->handle_irq);
 }
 
@@ -418,10 +422,13 @@ armpmu_reserve_hardware(void)
 		irq = platform_get_irq(pmu_device, i);
 		if (irq < 0)
 			continue;
-
+#ifdef CONFIG_ARCH_ARMADA_XP
+		err = pmu_request_irq(irq, handle_irq);
+#else
 		err = request_irq(irq, handle_irq,
 				  IRQF_DISABLED | IRQF_NOBALANCING,
 				  "armpmu", NULL);
+#endif
 		if (err) {
 			pr_warning("unable to request IRQ%d for ARM perf "
 				"counters\n", irq);
@@ -433,7 +440,11 @@ armpmu_reserve_hardware(void)
 		for (i = i - 1; i >= 0; --i) {
 			irq = platform_get_irq(pmu_device, i);
 			if (irq >= 0)
+#ifdef CONFIG_ARCH_ARMADA_XP
+				pmu_free_irq(irq);
+#else
 				free_irq(irq, NULL);
+#endif
 		}
 		release_pmu(pmu_device);
 		pmu_device = NULL;
@@ -450,7 +461,11 @@ armpmu_release_hardware(void)
 	for (i = pmu_device->num_resources - 1; i >= 0; --i) {
 		irq = platform_get_irq(pmu_device, i);
 		if (irq >= 0)
+#ifdef CONFIG_ARCH_ARMADA_XP
+			pmu_free_irq(irq);
+#else
 			free_irq(irq, NULL);
+#endif
 	}
 	armpmu->stop();
 
@@ -558,13 +573,11 @@ static int armpmu_event_init(struct perf_event *event)
 		return -ENODEV;
 
 	event->destroy = hw_perf_event_destroy;
-
 	if (!atomic_inc_not_zero(&active_events)) {
 		mutex_lock(&pmu_reserve_mutex);
 		if (atomic_read(&active_events) == 0) {
 			err = armpmu_reserve_hardware();
 		}
-
 		if (!err)
 			atomic_inc(&active_events);
 		mutex_unlock(&pmu_reserve_mutex);
@@ -572,7 +585,6 @@ static int armpmu_event_init(struct perf_event *event)
 
 	if (err)
 		return err;
-
 	err = __hw_perf_event_init(event);
 	if (err)
 		hw_perf_event_destroy(event);
@@ -624,7 +636,7 @@ static struct pmu pmu = {
 #include "perf_event_xscale.c"
 #include "perf_event_v6.c"
 #include "perf_event_v7.c"
-
+#include "perf_event_pj4b.c"
 /*
  * Ensure the PMU has sane values out of reset.
  * This requires SMP to be available, so exists as a separate initcall.
@@ -654,7 +666,13 @@ init_hw_perf_events(void)
 			armpmu = armv6pmu_init();
 			break;
 		case 0xB020:	/* ARM11mpcore */
+#ifdef CONFIG_ARCH_ARMADA_XP
+			mrvl_pj4b_read_reset_pmnc();
+			printk(KERN_INFO "Armada-XP Performance Monitor Unit detected (ARM MPcore ID)!!!\n");
+			armpmu=mrvl_pj4b_pmu_init();
+#else
 			armpmu = armv6mpcore_pmu_init();
+#endif
 			break;
 		case 0xC080:	/* Cortex-A8 */
 			armpmu = armv7_a8_pmu_init();
@@ -674,7 +692,22 @@ init_hw_perf_events(void)
 			armpmu = xscale2pmu_init();
 			break;
 		}
+#ifdef CONFIG_ARCH_ARMADA_XP
+	/* Marvell Armada XP CPUs */
+	} else if (0x56 == implementor) {
+		part_number = (cpuid >> 4) & 0xFFF;
+		switch (part_number) {
+		case 0x581:
+		case 0x584:
+			printk(KERN_INFO "Armada-XP Performance Monitor Unit detected (Marvell ID)!!!\n");
+			mrvl_pj4b_read_reset_pmnc();
+			armpmu=mrvl_pj4b_pmu_init();
+			break;
+		}
 	}
+#else
+	}
+#endif
 
 	if (armpmu) {
 		pr_info("enabled with %s PMU driver, %d counters available\n",

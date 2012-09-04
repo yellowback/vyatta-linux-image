@@ -74,3 +74,7 @@ void md_run_setup(void);
 static inline void md_run_setup(void) {}
 
 #endif
+
+#if defined(CONFIG_MACH_OPENBLOCKS)
+int __init do_restore(void *shell);
+#endif

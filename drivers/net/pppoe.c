@@ -85,6 +85,13 @@
 
 #include <asm/uaccess.h>
 
+#if defined(CONFIG_MV_ETH_NFP_PPP) && defined(CONFIG_MV_ETH_NFP_LEARN)
+extern int nfp_ppp_db_init(void);
+extern int nfp_ppp_info_del(u32 channel);
+extern int nfp_hook_ppp_half_set(u16 sid, u32 chan, struct net_device *eth_dev, char *remoteMac);
+extern int nfp_ppp_db_clear(void);
+#endif /* CONFIG_MV_ETH_NFP_PPP && CONFIG_MV_ETH_NFP_LEARN */
+
 #define PPPOE_HASH_BITS 4
 #define PPPOE_HASH_SIZE (1 << PPPOE_HASH_BITS)
 #define PPPOE_HASH_MASK	(PPPOE_HASH_SIZE - 1)
@@ -593,6 +600,10 @@ static int pppoe_release(struct socket *sock)
 	 * protect "po" from concurrent updates
 	 * on pppoe_flush_dev
 	 */
+#if defined(CONFIG_MV_ETH_NFP_PPP) && defined(CONFIG_MV_ETH_NFP_LEARN)
+	nfp_ppp_info_del((u32)&po->chan);
+#endif /* CONFIG_MV_ETH_NFP_PPP && CONFIG_MV_ETH_NFP_LEARN */
+
 	delete_item(pn, po->pppoe_pa.sid, po->pppoe_pa.remote,
 		    po->pppoe_ifindex);
 
@@ -693,6 +704,10 @@ static int pppoe_connect(struct socket *sock, struct sockaddr *uservaddr,
 		}
 
 		sk->sk_state = PPPOX_CONNECTED;
+
+#if defined(CONFIG_MV_ETH_NFP_PPP) && defined(CONFIG_MV_ETH_NFP_LEARN)
+		nfp_hook_ppp_half_set(sp->sa_addr.pppoe.sid, (u32)&po->chan, dev, po->pppoe_pa.remote);
+#endif /* CONFIG_MV_ETH_NFP_PPP && CONFIG_MV_ETH_NFP_LEARN */
 	}
 
 	po->num = sp->sa_addr.pppoe.sid;
@@ -1179,6 +1194,10 @@ static int __init pppoe_init(void)
 	dev_add_pack(&pppoed_ptype);
 	register_netdevice_notifier(&pppoe_notifier);
 
+#if defined(CONFIG_MV_ETH_NFP_PPP) && defined(CONFIG_MV_ETH_NFP_LEARN)
+	nfp_ppp_db_init();
+#endif /* CONFIG_MV_ETH_NFP_PPP && CONFIG_MV_ETH_NFP_LEARN */
+
 	return 0;
 
 out_unregister_pppoe_proto:
@@ -1191,6 +1210,10 @@ out:
 
 static void __exit pppoe_exit(void)
 {
+#if defined(CONFIG_MV_ETH_NFP_PPP) && defined(CONFIG_MV_ETH_NFP_LEARN)
+	nfp_ppp_db_clear();
+#endif /* CONFIG_MV_ETH_NFP_PPP && CONFIG_MV_ETH_NFP_LEARN */
+
 	unregister_netdevice_notifier(&pppoe_notifier);
 	dev_remove_pack(&pppoed_ptype);
 	dev_remove_pack(&pppoes_ptype);

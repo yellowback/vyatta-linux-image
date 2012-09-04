@@ -1,0 +1,132 @@
+   Marvell 61xx/64xx Controller Linux Open Source Driver
+ ---------------------------------------------------------
+    
+1. Introduction
+2. Build driver 
+3. Build the driver into kernel
+4. Note
+---------------------------------------
+
+1. Introduction
+---------------
+
+    This is the partial linux kernel driver source code for Marvell SATA 
+controllers. Current version of the source only supports 2.6 kernel.
+
+
+2. Build driver 
+---------------
+
+    2.1 Make sure kernel source/headers is ready.
+
+        Depending on your need, you may want to build a driver for the running
+    kernel of your host machine, or you might want to build drivers for other
+    versions of kernel. In both cases, you should have the source code of the 
+    kernel installed. For example, you should launch yast and install the
+    'kernel-source' package if you're using SuSE Linux (including SLED/SLES ).
+
+        To build the module, you also should know where the kernel source is. 
+    For SuSE Linux and Red Hat, the source to the running kernel can be found
+    at /lib/modules/`uname -r`/build. If you want to build driver for a 
+    customized kernel, make sure your user account have the access to the 
+    source. 
+
+    2.2 Build the driver
+
+      	If you're building driver for a kernel other than the running one, you
+    should let driver source know the path to the kernel source before issuing
+    make. You have two ways of issuing make command:
+
+        1) Set the shell environment variable 'KERNEL_SRC' to the path to
+           kernel source for which you want to build the driver. Suppose the
+           source is located at /usr/src/linux, then execute the following
+           command:
+		
+            # export KERNEL_SRC=/usr/src/linux
+            # make
+        
+        2) Specify the KERNEL_SRC in the invocation of make command:
+
+            # make KERNEL_SRC=/usr/src/linux
+
+           Watching the sources being compiled, and when it stops, you're done.
+
+        Note : 
+           Make sure the kernel source is properly prepared for external module 
+           building. Execute 'make modules_prepare' in the kernel source
+	   directory if you haven't done so.
+	
+    2.3 Install the driver.
+
+        If the module is named as mv61xx.ko,to install the driver, you type:
+	
+            # insmod mv61xx.ko
+	        
+        If the module is named as mv64xx.ko,to install the driver, you type:
+	
+	    			# insmod mv64xx.ko
+
+3. Build the driver into kernel
+-------------------------------
+
+    3.1 Make sure you have the complete kernel source installed.
+
+        To patch a kernel tree, you'll need the complete source to the linux
+    kernel. Also you'll need to verify that you have the write permission on
+    the source directory.
+
+
+    3.2 Patch the source.
+
+        Change working directory to the driver source code, type:*
+	     # export KERNEL_SRC=/usr/src/linux
+            # make $KERNEL_SRC kbuild
+
+        You should substitute '/usr/src/linux' with the absolute path to the
+        kernel source directory.
+
+        You can always rewind the patch by using the following command:
+
+	    			# make $KERNEL_SRC ukbuild
+
+    3.3 Build the kernel
+
+        Now you can start kernel configuration process, follow the normal kernel
+    building process, which varies on different linux distributions and is not 
+    covered here. then you can configure the driver into kernel during the
+    kernel configuration process (e.g. "make menuconfig"). 
+     
+        Below is an example to make and install a kernel with the driver built-in:
+     		# export KERNEL_SRC=/usr/src/linux
+        # cd /usr/src/linux
+        # make mrproper
+        # make menuconfig
+        
+        Select "Device Drivers --->" and press enter.
+        Select "SCSI device support", then press 'Y' to make it built-in.
+        Select "SCSI disk support" then press 'Y' to make it build-in.
+        Select "SCSI low-level drivers --->" and press enter.
+        
+        Select "Marvell Storage Controller 9180/9480" and press 'Y'.
+        or
+        Select "Marvell Storage Controller 6320/6340/6440/6450/6480" and press 'Y'.
+        
+        Exit and save the kernel configuration.
+        # make dep
+	 			# make clean
+ 	 			# make bzImage
+	 			# make modules
+        # make modules_install
+        # make install
+        
+        Now mv94xx/mv64xx driver will be built into kernel image. Note that
+    mv94xx/mv64xx driver depends on SCSI and SCSI disk support, so you should
+    also build them as part of the kernel ( not as modules ). Then you can
+    reboot from the new kernel.
+ 
+4. Note
+-------
+
+* We've tested the patch successfully against kernel 2.6.16 and upward.
+
+

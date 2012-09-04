@@ -18,6 +18,7 @@
 #define HWCAP_THUMBEE	2048
 #define HWCAP_NEON	4096
 #define HWCAP_VFPv3	8192
+#define HWCAP_VFPv4	(1 << 16)
 #define HWCAP_VFPv3D16	16384
 #define HWCAP_TLS	32768
 

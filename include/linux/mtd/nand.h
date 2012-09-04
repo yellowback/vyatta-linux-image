@@ -509,6 +509,15 @@ struct nand_chip {
 
 	int chip_delay;
 	unsigned int options;
+#ifdef CONFIG_MTD_NAND_NFC_GANG_SUPPORT
+	unsigned int	num_devs;
+#endif
+#ifdef CONFIG_MTD_NAND_NFC_MLC_SUPPORT
+	unsigned int	oobsize_ovrd;
+	unsigned int	bb_location;
+	unsigned int	bb_page;
+#endif
+
 
 	int page_shift;
 	int phys_erase_shift;

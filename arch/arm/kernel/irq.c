@@ -61,6 +61,9 @@ int arch_show_interrupts(struct seq_file *p, int prec)
 #endif
 #ifdef CONFIG_LOCAL_TIMERS
 	show_local_irqs(p, prec);
+#if defined(CONFIG_ARCH_ARMADA_XP) && defined(CONFIG_PERF_EVENTS)
+	show_local_pmu_irqs(p, prec);
+#endif
 #endif
 	seq_printf(p, "%*s: %10lu\n", prec, "Err", irq_err_count);
 	return 0;

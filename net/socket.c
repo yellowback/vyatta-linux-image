@@ -1750,6 +1750,7 @@ SYSCALL_DEFINE6(recvfrom, int, fd, void __user *, ubuf, size_t, size,
 	msg.msg_controllen = 0;
 	msg.msg_iovlen = 1;
 	msg.msg_iov = &iov;
+	msg.msg_flags = 0;
 	iov.iov_len = size;
 	iov.iov_base = ubuf;
 	msg.msg_name = (struct sockaddr *)&address;

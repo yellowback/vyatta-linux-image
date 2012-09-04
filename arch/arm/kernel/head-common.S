@@ -48,6 +48,10 @@ __vet_atags:
 	bne	1f
 
 	ldr	r5, [r2, #0]
+
+#ifdef CONFIG_BE8_ON_LE
+	rev	r5, r5
+#endif
 #ifdef CONFIG_OF_FLATTREE
 	ldr	r6, =OF_DT_MAGIC		@ is it a DTB?
 	cmp	r5, r6
@@ -57,6 +61,9 @@ __vet_atags:
 	cmpne	r5, #ATAG_CORE_SIZE_EMPTY
 	bne	1f
 	ldr	r5, [r2, #4]
+#ifdef CONFIG_BE8_ON_LE
+	rev	r5, r5
+#endif
 	ldr	r6, =ATAG_CORE
 	cmp	r5, r6
 	bne	1f

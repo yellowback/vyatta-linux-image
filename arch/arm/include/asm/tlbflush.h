@@ -172,8 +172,13 @@
 			 TLB_V6_I_ASID | TLB_V6_D_ASID)
 
 #ifdef CONFIG_CPU_TLB_V6
+#if defined (CONFIG_ARCH_ARMADA_XP) && !defined (CONFIG_AURORA_L2_PT_WALK)
+# define v6wbi_possible_flags	(v6wbi_tlb_flags | TLB_L2CLEAN_FR)
+# define v6wbi_always_flags	(v6wbi_tlb_flags | TLB_L2CLEAN_FR)
+#else
 # define v6wbi_possible_flags	v6wbi_tlb_flags
 # define v6wbi_always_flags	v6wbi_tlb_flags
+#endif
 # ifdef _TLB
 #  define MULTI_TLB 1
 # else
@@ -218,7 +223,9 @@
 #ifndef __ASSEMBLY__
 
 #include <linux/sched.h>
-
+#ifdef CONFIG_CACHE_AURORA_L2
+extern void l2_clean_pa(unsigned int pa); 
+#endif
 struct cpu_tlb_fns {
 	void (*flush_user_range)(unsigned long, unsigned long, struct vm_area_struct *);
 	void (*flush_kern_range)(unsigned long, unsigned long);
@@ -514,13 +521,32 @@ static inline void flush_pmd_entry(pmd_t *pmd)
 	const unsigned int __tlb_flag = __cpu_tlb_flags;
 
 	if (tlb_flag(TLB_DCLEAN))
+#ifdef CONFIG_SHEEVA_ERRATA_ARM_CPU_4611
+	{
+		unsigned long flags;
+        	raw_local_irq_save(flags);
+		dmb();
+#endif
+#ifdef CONFIG_SHEEVA_ERRATA_ARM_CPU_6043
+		asm("mcr        p15, 0, %0, c7, c14, 1  @ flush_pmd"
+                        : : "r" (pmd) : "cc");
+#else
 		asm("mcr	p15, 0, %0, c7, c10, 1	@ flush_pmd"
 			: : "r" (pmd) : "cc");
+#endif
+#ifdef CONFIG_SHEEVA_ERRATA_ARM_CPU_4611
+		raw_local_irq_restore(flags);
+	}
+#endif
 
+#ifdef CONFIG_CACHE_AURORA_L2
+	if (tlb_flag(TLB_L2CLEAN_FR)) 
+        	l2_clean_pa(__pa((unsigned long)pmd));
+#else
 	if (tlb_flag(TLB_L2CLEAN_FR))
 		asm("mcr	p15, 1, %0, c15, c9, 1  @ L2 flush_pmd"
 			: : "r" (pmd) : "cc");
-
+#endif
 	if (tlb_flag(TLB_WB))
 		dsb();
 }
@@ -530,12 +556,32 @@ static inline void clean_pmd_entry(pmd_t *pmd)
 	const unsigned int __tlb_flag = __cpu_tlb_flags;
 
 	if (tlb_flag(TLB_DCLEAN))
+#ifdef CONFIG_SHEEVA_ERRATA_ARM_CPU_4611
+	{
+		unsigned long flags;
+                raw_local_irq_save(flags);
+                dmb();
+#endif
+#ifdef CONFIG_SHEEVA_ERRATA_ARM_CPU_6043
+		asm("mcr        p15, 0, %0, c7, c14, 1  @ flush_pmd"
+                        : : "r" (pmd) : "cc");
+#else
 		asm("mcr	p15, 0, %0, c7, c10, 1	@ flush_pmd"
 			: : "r" (pmd) : "cc");
+#endif
+#ifdef CONFIG_SHEEVA_ERRATA_ARM_CPU_4611
+		raw_local_irq_restore(flags);
+	}
+#endif
 
+#ifdef CONFIG_CACHE_AURORA_L2
+	if (tlb_flag(TLB_L2CLEAN_FR))
+		l2_clean_pa(__pa((unsigned long)pmd));
+#else
 	if (tlb_flag(TLB_L2CLEAN_FR))
 		asm("mcr	p15, 1, %0, c15, c9, 1  @ L2 flush_pmd"
 			: : "r" (pmd) : "cc");
+#endif
 }
 
 #undef tlb_flag

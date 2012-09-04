@@ -45,6 +45,11 @@ unsigned long __stack_chk_guard __read_mostly;
 EXPORT_SYMBOL(__stack_chk_guard);
 #endif
 
+#if defined(CONFIG_MACH_OPENBLOCKS) && defined(CONFIG_OBS_LED)
+extern void obsled_out(int);
+#define BLINK_MSEC (1000)
+#endif
+
 static const char *processor_modes[] = {
   "USER_26", "FIQ_26" , "IRQ_26" , "SVC_26" , "UK4_26" , "UK5_26" , "UK6_26" , "UK7_26" ,
   "UK8_26" , "UK9_26" , "UK10_26", "UK11_26", "UK12_26", "UK13_26", "UK14_26", "UK15_26",
@@ -238,7 +243,14 @@ void machine_shutdown(void)
 void machine_halt(void)
 {
 	machine_shutdown();
-	while (1);
+	while (1){
+#ifdef CONFIG_OBS_LED
+	obsled_out(7);
+	mdelay(BLINK_MSEC);
+	obsled_out(0);
+	mdelay(BLINK_MSEC);
+#endif
+	}
 }
 
 void machine_power_off(void)

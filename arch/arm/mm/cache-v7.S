@@ -42,7 +42,11 @@ ENDPROC(v7_flush_icache_all)
  *	- mm    - mm_struct describing address space
  */
 ENTRY(v7_flush_dcache_all)
+#ifdef CONFIG_SHEEVA_ERRATA_ARM_CPU_6075
+	dsb
+#else
 	dmb					@ ensure ordering with previous memory accesses
+#endif
 	mrc	p15, 1, r0, c0, c0, 1		@ read clidr
 	ands	r3, r0, #0x7000000		@ extract loc from clidr
 	mov	r3, r3, lsr #23			@ left align loc bit field
@@ -185,7 +189,11 @@ ENTRY(v7_coherent_user_range)
 	ALT_UP(W(nop))
 #endif
 1:
- USER(	mcr	p15, 0, r12, c7, c11, 1	)	@ clean D line to the point of unification
+#if defined SHEEVA_ERRATA_ARM_CPU_6043 || defined SHEEVA_ERRATA_ARM_CPU_6076
+	USER(  mcr     p15, 0, r12, c7, c14, 1 )       @ clean & invalidate D line to the point of unification
+#else
+	USER(	mcr	p15, 0, r12, c7, c11, 1	)	@ clean D line to the point of unification
+#endif
 	add	r12, r12, r2
 	cmp	r12, r1
 	blo	1b
@@ -195,6 +203,9 @@ ENTRY(v7_coherent_user_range)
 	bic	r12, r0, r3
 2:
  USER(	mcr	p15, 0, r12, c7, c5, 1	)	@ invalidate I line
+#ifdef CONFIG_SHEEVA_ERRATA_ARM_CPU_4659
+	isb
+#endif
 	add	r12, r12, r2
 	cmp	r12, r1
 	blo	2b
@@ -211,9 +222,15 @@ ENTRY(v7_coherent_user_range)
  * isn't mapped, just try the next page.
  */
 9001:
+#ifdef CONFIG_MV_SUPPORT_64KB_PAGE_SIZE
+	mov	r12, r12, lsr #16
+	mov	r12, r12, lsl #16
+	add	r12, r12, #0x10000
+#else
 	mov	r12, r12, lsr #12
 	mov	r12, r12, lsl #12
 	add	r12, r12, #4096
+#endif
 	b	3b
  UNWIND(.fnend		)
 ENDPROC(v7_coherent_kern_range)
@@ -271,6 +288,13 @@ v7_dma_inv_range:
 	bic	r1, r1, r3
 	mcrne	p15, 0, r1, c7, c14, 1		@ clean & invalidate D / U line
 1:
+#if defined (CONFIG_SHEEVA_ERRATA_ARM_CPU_4413)
+#ifdef CONFIG_SHEEVA_ERRATA_ARM_CPU_6075
+	dsb
+#else
+	dmb
+#endif
+#endif
 	mcr	p15, 0, r0, c7, c6, 1		@ invalidate D / U line
 	add	r0, r0, r2
 	cmp	r0, r1
@@ -293,7 +317,11 @@ v7_dma_clean_range:
 	ALT_UP(W(nop))
 #endif
 1:
+#if defined SHEEVA_ERRATA_ARM_CPU_6043 || defined SHEEVA_ERRATA_ARM_CPU_6076
+	mcr     p15, 0, r12, c7, c14, 1         @ clean & invalidate D line to the point of unification
+#else
 	mcr	p15, 0, r0, c7, c10, 1		@ clean D / U line
+#endif
 	add	r0, r0, r2
 	cmp	r0, r1
 	blo	1b

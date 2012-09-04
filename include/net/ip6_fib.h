@@ -120,6 +120,11 @@ struct rt6_info {
 	unsigned short			rt6i_nfheader_len;
 
 	u8				rt6i_protocol;
+
+#if defined (CONFIG_MV_ETH_NFP_FIB_LEARN)
+	int				rt6i_iifindex;
+	bool 			nfp;
+#endif /* CONFIG_MV_ETH_NFP_FIB_LEARN */
 };
 
 static inline struct inet6_dev *ip6_dst_idev(struct dst_entry *dst)
